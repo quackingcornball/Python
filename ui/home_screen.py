@@ -7,6 +7,7 @@ from tkinter import ttk
 from typing import Callable, Optional, Dict, Any, List
 from config import COLORS, FONTS, PADDING, SPACING, SYNC_INTERVAL
 from core.data_manager import DataManager
+from core.calculations import format_overs
 from utils.time_utils import format_time_ago, get_seconds_since
 from .components import StyledButton, MatchCard, CardFrame, LiveIndicator
 
@@ -181,7 +182,7 @@ class HomeScreen(tk.Frame):
                 if innings and len(innings) > current_innings:
                     current = innings[current_innings]
                     score = f"{current.get('runs', 0)}/{current.get('wickets', 0)}"
-                    overs = str(current.get('overs', 0.0))
+                    overs = format_overs(current.get('overs', 0.0))
                 
                 card = MatchCard(
                     self.scrollable_frame,

@@ -21,13 +21,115 @@ from core.calculations import (
     calculate_run_rate,
     calculate_required_run_rate,
     calculate_projected_score,
-    calculate_remaining_balls
+    calculate_remaining_balls,
+    format_overs
 )
 from utils.time_utils import format_time_ago, get_seconds_since
 from .components import (
     StyledButton, CardFrame, ScoreDisplay, StatusBadge,
-    DataTable, BallTimeline, LiveIndicator
+    DataTable, BallTimeline, LiveIndicator, ScrollableFrame
 )
+
+
+class PlayerSelectDialog(tk.Toplevel):
+    """Dialog to select a player from a list"""
+    
+    def __init__(self, parent, title: str, players: List[str], allow_custom: bool = False):
+        super().__init__(parent)
+        self.result = None
+        
+        self.title(title)
+        self.geometry("300x400")
+        self.configure(bg=COLORS['background'])
+        self.transient(parent)
+        self.grab_set()
+        
+        # Center the dialog
+        self.update_idletasks()
+        x = parent.winfo_rootx() + (parent.winfo_width() // 2) - 150
+        y = parent.winfo_rooty() + (parent.winfo_height() // 2) - 200
+        self.geometry(f"+{x}+{y}")
+        
+        # Player list
+        list_frame = tk.Frame(self, bg=COLORS['background'])
+        list_frame.pack(fill='both', expand=True, padx=PADDING, pady=PADDING)
+        
+        tk.Label(
+            list_frame,
+            text="Select player:",
+            font=FONTS['subheading'],
+            bg=COLORS['background'],
+            fg=COLORS['text_primary']
+        ).pack(anchor='w', pady=(0, SPACING))
+        
+        self.listbox = tk.Listbox(
+            list_frame,
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_primary'],
+            selectmode='single',
+            highlightthickness=1,
+            highlightbackground=COLORS['border'],
+            height=10
+        )
+        scrollbar = ttk.Scrollbar(list_frame, orient='vertical', command=self.listbox.yview)
+        self.listbox.configure(yscrollcommand=scrollbar.set)
+        
+        self.listbox.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+        
+        for player in players:
+            self.listbox.insert(tk.END, player)
+        
+        self.listbox.bind('<Double-1>', self._on_select)
+        
+        # Custom entry if allowed
+        if allow_custom:
+            custom_frame = tk.Frame(self, bg=COLORS['background'])
+            custom_frame.pack(fill='x', padx=PADDING, pady=(0, PADDING))
+            
+            tk.Label(
+                custom_frame,
+                text="Or enter name:",
+                font=FONTS['small'],
+                bg=COLORS['background'],
+                fg=COLORS['text_secondary']
+            ).pack(anchor='w')
+            
+            self.custom_entry = tk.Entry(
+                custom_frame,
+                font=FONTS['body'],
+                bg=COLORS['card_bg'],
+                fg=COLORS['text_primary'],
+                insertbackground=COLORS['text_primary'],
+                highlightthickness=1,
+                highlightbackground=COLORS['border']
+            )
+            self.custom_entry.pack(fill='x', pady=(SPACING // 2, 0))
+        else:
+            self.custom_entry = None
+        
+        # Buttons
+        btn_frame = tk.Frame(self, bg=COLORS['background'])
+        btn_frame.pack(fill='x', padx=PADDING, pady=(0, PADDING))
+        
+        cancel_btn = StyledButton(btn_frame, text="Cancel", variant='secondary', command=self.destroy)
+        cancel_btn.pack(side='left')
+        
+        select_btn = StyledButton(btn_frame, text="Select", variant='primary', command=self._on_select)
+        select_btn.pack(side='right')
+        
+        self.wait_window()
+    
+    def _on_select(self, event=None):
+        """Handle selection"""
+        # Check custom entry first
+        if self.custom_entry and self.custom_entry.get().strip():
+            self.result = self.custom_entry.get().strip()
+        elif self.listbox.curselection():
+            idx = self.listbox.curselection()[0]
+            self.result = self.listbox.get(idx)
+        self.destroy()
 
 
 class MatchView(tk.Frame):
@@ -57,7 +159,7 @@ class MatchView(tk.Frame):
     
     def _create_ui(self):
         """Create the match view UI"""
-        # Header
+        # Header (fixed at top)
         header = tk.Frame(self, bg=COLORS['card_bg'], padx=PADDING, pady=PADDING)
         header.pack(fill='x')
         
@@ -87,12 +189,18 @@ class MatchView(tk.Frame):
         self.live_indicator = LiveIndicator(header)
         self.live_indicator.pack(side='right')
         
-        # Main content area
-        content = tk.Frame(self, bg=COLORS['background'])
-        content.pack(fill='both', expand=True, padx=PADDING, pady=PADDING)
+        # Main scrollable content area
+        scroll_container = ScrollableFrame(self, bg=COLORS['background'])
+        scroll_container.pack(fill='both', expand=True)
+        content = scroll_container.get_frame()
+        content.configure(padx=PADDING, pady=PADDING)
         
-        # Left side - Scoreboard and tables
-        left_panel = tk.Frame(content, bg=COLORS['background'])
+        # Top section: Score + Controls side by side
+        top_section = tk.Frame(content, bg=COLORS['background'])
+        top_section.pack(fill='x', pady=(0, SPACING))
+        
+        # Left side - Scoreboard and Ball Timeline
+        left_panel = tk.Frame(top_section, bg=COLORS['background'])
         left_panel.pack(side='left', fill='both', expand=True)
         
         # Scoreboard
@@ -141,9 +249,37 @@ class MatchView(tk.Frame):
         self.ball_timeline = BallTimeline(timeline_frame)
         self.ball_timeline.pack(fill='x', pady=(SPACING // 4, SPACING // 4))
         
+        # Right side - Controls (admin only)
+        right_panel = tk.Frame(top_section, bg=COLORS['background'], width=480)
+        right_panel.pack(side='right', fill='y', padx=(SPACING + 4, 0))
+        right_panel.pack_propagate(False)
+        
+        if self.is_admin:
+            self._create_admin_controls(right_panel)
+        
+        # Middle section: Scorecard (Batting & Bowling tables)
+        scorecard_section = tk.Frame(content, bg=COLORS['background'])
+        scorecard_section.pack(fill='x', pady=(SPACING, 0))
+        
+        scorecard_label = tk.Label(
+            scorecard_section,
+            text="Full Scorecard",
+            font=FONTS['heading'],
+            bg=COLORS['background'],
+            fg=COLORS['text_primary']
+        )
+        scorecard_label.pack(anchor='w', pady=(0, SPACING))
+        
+        # Tables side by side
+        tables_frame = tk.Frame(scorecard_section, bg=COLORS['background'])
+        tables_frame.pack(fill='x')
+        
         # Batting table
-        batting_frame = CardFrame(left_panel, title="Batting")
-        batting_frame.pack(fill='x', pady=(SPACING + 4, 0))
+        batting_container = tk.Frame(tables_frame, bg=COLORS['background'])
+        batting_container.pack(side='left', fill='both', expand=True, padx=(0, SPACING // 2))
+        
+        batting_frame = CardFrame(batting_container, title="Batting")
+        batting_frame.pack(fill='both', expand=True)
         
         self.batting_table = DataTable(
             batting_frame,
@@ -152,8 +288,11 @@ class MatchView(tk.Frame):
         self.batting_table.pack(fill='both', expand=True, pady=(0, SPACING // 2))
         
         # Bowling table
-        bowling_frame = CardFrame(left_panel, title="Bowling")
-        bowling_frame.pack(fill='x', pady=(SPACING + 4, 0))
+        bowling_container = tk.Frame(tables_frame, bg=COLORS['background'])
+        bowling_container.pack(side='right', fill='both', expand=True, padx=(SPACING // 2, 0))
+        
+        bowling_frame = CardFrame(bowling_container, title="Bowling")
+        bowling_frame.pack(fill='both', expand=True)
         
         self.bowling_table = DataTable(
             bowling_frame,
@@ -161,21 +300,87 @@ class MatchView(tk.Frame):
         )
         self.bowling_table.pack(fill='both', expand=True, pady=(0, SPACING // 2))
         
-        # Right side - Controls (admin) or Charts (viewer)
-        right_panel = tk.Frame(content, bg=COLORS['background'], width=480)
-        right_panel.pack(side='right', fill='both', padx=(SPACING + 4, 0))
-        right_panel.pack_propagate(False)
+        # Bottom section: Analysis charts (full width)
+        analysis_section = tk.Frame(content, bg=COLORS['background'])
+        analysis_section.pack(fill='both', expand=True, pady=(SPACING + 8, 0))
         
-        if self.is_admin:
-            self._create_admin_controls(right_panel)
-        
-        # Charts
-        self._create_charts(right_panel)
+        self._create_charts(analysis_section)
     
     def _create_admin_controls(self, parent):
         """Create admin scoring controls"""
+        # Team Roster Management
+        roster_frame = CardFrame(parent, title="Team Roster")
+        roster_frame.pack(fill='x')
+        
+        # Team selection and roster display
+        self.roster_team_var = tk.StringVar()
+        
+        team_select_frame = tk.Frame(roster_frame, bg=COLORS['card_bg'])
+        team_select_frame.pack(fill='x', pady=(0, SPACING))
+        
+        tk.Label(
+            team_select_frame,
+            text="Team:",
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_secondary']
+        ).pack(side='left')
+        
+        self.team_dropdown = ttk.Combobox(
+            team_select_frame,
+            textvariable=self.roster_team_var,
+            state='readonly',
+            width=20
+        )
+        self.team_dropdown.pack(side='left', padx=(SPACING // 2, 0))
+        self.team_dropdown.bind('<<ComboboxSelected>>', self._on_team_selected)
+        
+        # Roster list with scrollbar
+        roster_list_frame = tk.Frame(roster_frame, bg=COLORS['card_bg'])
+        roster_list_frame.pack(fill='x', pady=(0, SPACING))
+        
+        self.roster_listbox = tk.Listbox(
+            roster_list_frame,
+            height=5,
+            font=FONTS['body'],
+            bg=COLORS['background'],
+            fg=COLORS['text_primary'],
+            selectmode='single',
+            highlightthickness=1,
+            highlightbackground=COLORS['border']
+        )
+        roster_scrollbar = ttk.Scrollbar(roster_list_frame, orient='vertical', command=self.roster_listbox.yview)
+        self.roster_listbox.configure(yscrollcommand=roster_scrollbar.set)
+        self.roster_listbox.pack(side='left', fill='x', expand=True)
+        roster_scrollbar.pack(side='right', fill='y')
+        
+        # Add player to roster
+        add_roster_frame = tk.Frame(roster_frame, bg=COLORS['card_bg'])
+        add_roster_frame.pack(fill='x', pady=(0, SPACING // 2))
+        
+        self.new_player_entry = tk.Entry(
+            add_roster_frame,
+            font=FONTS['body'],
+            bg=COLORS['background'],
+            fg=COLORS['text_primary'],
+            insertbackground=COLORS['text_primary'],
+            highlightthickness=1,
+            highlightbackground=COLORS['border']
+        )
+        self.new_player_entry.pack(side='left', fill='x', expand=True, padx=(0, SPACING // 2))
+        self.new_player_entry.bind('<Return>', lambda e: self._add_to_roster())
+        
+        add_roster_btn = StyledButton(
+            add_roster_frame,
+            text="+ Add",
+            variant='primary',
+            command=self._add_to_roster
+        )
+        add_roster_btn.pack(side='right')
+        
+        # Scoring Controls
         controls_frame = CardFrame(parent, title="Scoring Controls")
-        controls_frame.pack(fill='x')
+        controls_frame.pack(fill='x', pady=(SPACING, 0))
         
         # Current players display
         players_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
@@ -199,7 +404,7 @@ class MatchView(tk.Frame):
         )
         self.bowler_label.pack(anchor='w')
         
-        # Add players buttons
+        # Add players buttons - now uses roster selection
         add_players_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
         add_players_frame.pack(fill='x', pady=(0, SPACING + 4))
         
@@ -310,29 +515,28 @@ class MatchView(tk.Frame):
         self.declare_btn.pack(side='right')
     
     def _create_charts(self, parent):
-        """Create charts section"""
-        charts_frame = CardFrame(parent, title="Analysis")
-        charts_frame.pack(fill='both', expand=True, pady=(SPACING, 0))
+        """Create charts section - full width at bottom"""
+        charts_frame = CardFrame(parent, title="Match Analysis")
+        charts_frame.pack(fill='both', expand=True)
         
-        # Create matplotlib figure with larger size
-        self.fig = Figure(figsize=(5, 7), dpi=90)
+        # Create matplotlib figure - wider for full width display
+        self.fig = Figure(figsize=(12, 5), dpi=90)
         self.fig.patch.set_facecolor(COLORS['card_bg'])
         
-        # Run rate chart with more spacing
-        self.rr_ax = self.fig.add_subplot(211)
-        self.rr_ax.set_title('Run Rate Progression', fontsize=12, pad=12, fontweight='bold')
+        # Charts side by side (1 row, 2 columns)
+        self.rr_ax = self.fig.add_subplot(121)
+        self.rr_ax.set_title('Run Rate Progression', fontsize=13, pad=12, fontweight='bold')
         self.rr_ax.set_facecolor(COLORS['card_bg'])
         
-        # Runs per over chart
-        self.rpo_ax = self.fig.add_subplot(212)
-        self.rpo_ax.set_title('Runs per Over', fontsize=12, pad=12, fontweight='bold')
+        self.rpo_ax = self.fig.add_subplot(122)
+        self.rpo_ax.set_title('Runs per Over', fontsize=13, pad=12, fontweight='bold')
         self.rpo_ax.set_facecolor(COLORS['card_bg'])
         
-        # Add more padding between subplots
-        self.fig.tight_layout(pad=3.0, h_pad=4.0)
+        # Adjust layout for side-by-side
+        self.fig.tight_layout(pad=3.0, w_pad=4.0)
         
         self.canvas = FigureCanvasTkAgg(self.fig, charts_frame)
-        self.canvas.get_tk_widget().pack(fill='both', expand=True, pady=(SPACING // 2, 0))
+        self.canvas.get_tk_widget().pack(fill='both', expand=True, pady=(SPACING // 2, SPACING))
     
     def _load_match(self):
         """Load match data"""
@@ -352,6 +556,15 @@ class MatchView(tk.Frame):
         # Update status
         status = self.match.get('status', 'Upcoming')
         self.status_badge.set_status(status)
+        
+        # Update team dropdown for roster management (admin only)
+        if self.is_admin and hasattr(self, 'team_dropdown'):
+            current_values = list(self.team_dropdown['values'])
+            if current_values != teams:
+                self.team_dropdown['values'] = teams
+                if not self.roster_team_var.get() and teams:
+                    self.roster_team_var.set(teams[0])
+                    self._on_team_selected()
         
         # Get current innings
         innings_list = self.match.get('innings', [])
@@ -447,7 +660,7 @@ class MatchView(tk.Frame):
             
             bowling_data.append([
                 name,
-                overs_b,
+                format_overs(overs_b),
                 runs_b,
                 bowler.get('wickets', 0),
                 f"{econ:.1f}"
@@ -486,13 +699,17 @@ class MatchView(tk.Frame):
         # Run rate progression
         rr_data = analysis.get('run_rate_progression', [])
         if rr_data:
+            # Use integer over numbers for x-axis (1, 2, 3, etc.)
             overs_x = list(range(1, len(rr_data) + 1))
             self.rr_ax.plot(overs_x, rr_data, color=COLORS['primary'], linewidth=2.5, marker='o', markersize=5)
             self.rr_ax.fill_between(overs_x, rr_data, alpha=0.2, color=COLORS['primary'])
-            self.rr_ax.set_xlabel('Overs', fontsize=11, labelpad=8)
+            self.rr_ax.set_xlabel('Over', fontsize=11, labelpad=8)
             self.rr_ax.set_ylabel('Run Rate', fontsize=11, labelpad=8)
             self.rr_ax.tick_params(axis='both', labelsize=10, pad=4)
             self.rr_ax.grid(True, alpha=0.3, linestyle='--')
+            # Set x-axis to show only integers
+            self.rr_ax.set_xticks(overs_x)
+            self.rr_ax.set_xticklabels([str(o) for o in overs_x])
         
         self.rr_ax.set_title('Run Rate Progression', fontsize=13, pad=14, fontweight='bold')
         self.rr_ax.set_facecolor(COLORS['card_bg'])
@@ -500,13 +717,17 @@ class MatchView(tk.Frame):
         # Runs per over
         rpo_data = analysis.get('runs_per_over', [])
         if rpo_data:
+            # Use integer over numbers for x-axis (1, 2, 3, etc.)
             overs_x = list(range(1, len(rpo_data) + 1))
             colors = [COLORS['runs'] if r >= 10 else COLORS['primary'] for r in rpo_data]
             self.rpo_ax.bar(overs_x, rpo_data, color=colors, edgecolor='none', width=0.7)
-            self.rpo_ax.set_xlabel('Overs', fontsize=11, labelpad=8)
+            self.rpo_ax.set_xlabel('Over', fontsize=11, labelpad=8)
             self.rpo_ax.set_ylabel('Runs', fontsize=11, labelpad=8)
             self.rpo_ax.tick_params(axis='both', labelsize=10, pad=4)
             self.rpo_ax.grid(True, alpha=0.3, linestyle='--', axis='y')
+            # Set x-axis to show only integers
+            self.rpo_ax.set_xticks(overs_x)
+            self.rpo_ax.set_xticklabels([str(o) for o in overs_x])
             
             # Mark wickets
             wickets = analysis.get('wickets_timeline', [])
@@ -517,30 +738,129 @@ class MatchView(tk.Frame):
         self.rpo_ax.set_title('Runs per Over', fontsize=13, pad=14, fontweight='bold')
         self.rpo_ax.set_facecolor(COLORS['card_bg'])
         
-        self.fig.tight_layout(pad=3.0, h_pad=4.0)
+        self.fig.tight_layout(pad=3.0, w_pad=4.0)
         self.canvas.draw()
     
-    def _add_batsman(self):
-        """Add a new batsman"""
+    def _on_team_selected(self, event=None):
+        """Handle team selection change"""
         if not self.match:
             return
         
-        name = simpledialog.askstring("Add Batsman", "Enter batsman name:")
-        if name:
-            innings = self.match['innings'][self.match['current_innings']]
-            MatchEngine.add_batsman(innings, name.strip())
+        team_name = self.roster_team_var.get()
+        roster = self.match.get('rosters', {}).get(team_name, [])
+        
+        self.roster_listbox.delete(0, tk.END)
+        for player in roster:
+            self.roster_listbox.insert(tk.END, player)
+    
+    def _add_to_roster(self):
+        """Add a player to the selected team's roster"""
+        if not self.match:
+            return
+        
+        team_name = self.roster_team_var.get()
+        player_name = self.new_player_entry.get().strip()
+        
+        if not team_name:
+            messagebox.showwarning("Warning", "Please select a team first.")
+            return
+        
+        if not player_name:
+            return
+        
+        # Initialize rosters if not exists
+        if 'rosters' not in self.match:
+            self.match['rosters'] = {}
+        
+        if team_name not in self.match['rosters']:
+            self.match['rosters'][team_name] = []
+        
+        # Add player if not already in roster
+        if player_name not in self.match['rosters'][team_name]:
+            self.match['rosters'][team_name].append(player_name)
+            self.roster_listbox.insert(tk.END, player_name)
+            self.new_player_entry.delete(0, tk.END)
             self._save_and_refresh()
+        else:
+            messagebox.showinfo("Info", f"{player_name} is already in the roster.")
+    
+    def _get_available_batsmen(self) -> List[str]:
+        """Get list of batsmen from roster who haven't batted yet"""
+        if not self.match:
+            return []
+        
+        innings = self.match['innings'][self.match['current_innings']]
+        batting_team = innings.get('batting_team', '')
+        roster = self.match.get('rosters', {}).get(batting_team, [])
+        
+        # Get names of batsmen who have already batted
+        batted = {b['name'] for b in innings.get('batsmen', [])}
+        
+        # Return available batsmen
+        return [p for p in roster if p not in batted]
+    
+    def _get_available_bowlers(self) -> List[str]:
+        """Get list of bowlers from roster"""
+        if not self.match:
+            return []
+        
+        innings = self.match['innings'][self.match['current_innings']]
+        bowling_team = innings.get('bowling_team', '')
+        roster = self.match.get('rosters', {}).get(bowling_team, [])
+        
+        return roster
+    
+    def _add_batsman(self):
+        """Add a new batsman from roster or manually"""
+        if not self.match:
+            return
+        
+        innings = self.match['innings'][self.match['current_innings']]
+        available = self._get_available_batsmen()
+        
+        if available:
+            # Show dialog to select from roster
+            dialog = PlayerSelectDialog(
+                self,
+                title="Add Batsman",
+                players=available,
+                allow_custom=True
+            )
+            if dialog.result:
+                MatchEngine.add_batsman(innings, dialog.result)
+                self._save_and_refresh()
+        else:
+            # Fallback to manual entry
+            name = simpledialog.askstring("Add Batsman", "Enter batsman name:")
+            if name:
+                MatchEngine.add_batsman(innings, name.strip())
+                self._save_and_refresh()
     
     def _add_bowler(self):
-        """Add or select bowler"""
+        """Add or select bowler from roster"""
         if not self.match:
             return
         
-        name = simpledialog.askstring("Add Bowler", "Enter bowler name:")
-        if name:
-            innings = self.match['innings'][self.match['current_innings']]
-            MatchEngine.add_bowler(innings, name.strip())
-            self._save_and_refresh()
+        innings = self.match['innings'][self.match['current_innings']]
+        available = self._get_available_bowlers()
+        
+        if available:
+            # Show dialog to select from roster
+            dialog = PlayerSelectDialog(
+                self,
+                title="Select Bowler",
+                players=available,
+                allow_custom=True
+            )
+            if dialog.result:
+                MatchEngine.add_bowler(innings, dialog.result)
+                self._save_and_refresh()
+        else:
+            # Fallback to manual entry
+            name = simpledialog.askstring("Add Bowler", "Enter bowler name:")
+            if name:
+                MatchEngine.add_bowler(innings, name.strip())
+                self._save_and_refresh()
     
     def _record_runs(self, runs: int):
         """Record runs scored"""

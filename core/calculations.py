@@ -88,6 +88,33 @@ def balls_to_overs(balls: int) -> float:
     return float(f"{whole_overs}.{remaining_balls}")
 
 
+def format_overs(overs: float) -> str:
+    """Format overs for display in proper cricket notation (e.g., 5.3 for 5 overs and 3 balls)
+    
+    This ensures overs are always displayed correctly even if stored as decimals.
+    For example: 1.5 (actual decimal) -> "1.3" (1 over, 3 balls)
+    """
+    if overs <= 0:
+        return "0.0"
+    
+    # Check if already in cricket format (decimal part 0-5)
+    whole_overs = int(overs)
+    decimal_part = overs - whole_overs
+    
+    # If decimal part is close to 0.0-0.5, it's already in cricket format
+    if decimal_part < 0.6:
+        balls = round(decimal_part * 10)
+        if balls <= 5:
+            return f"{whole_overs}.{balls}"
+    
+    # Otherwise, convert from actual decimal overs to cricket format
+    # e.g., 1.8333 (11 balls) -> 1.5
+    total_balls = round(overs * 6)
+    return_overs = total_balls // 6
+    return_balls = total_balls % 6
+    return f"{return_overs}.{return_balls}"
+
+
 def calculate_projected_score(current_runs: int, current_overs: float, total_overs: int) -> int:
     """Calculate projected score based on current run rate
     

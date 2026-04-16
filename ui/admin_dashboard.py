@@ -65,19 +65,27 @@ class AdminDashboard(tk.Frame):
         left_panel = CardFrame(content, title="Matches")
         left_panel.pack(side='left', fill='both', expand=True)
         
-        # Match list
+        # Match list with scrollbar
+        match_list_frame = tk.Frame(left_panel, bg=COLORS['card_bg'])
+        match_list_frame.pack(fill='both', expand=True)
+        
         self.match_listbox = tk.Listbox(
-            left_panel,
+            match_list_frame,
             font=FONTS['body'],
             bg=COLORS['card_bg'],
             fg=COLORS['text_primary'],
             selectbackground=COLORS['primary'],
             selectforeground='white',
             activestyle='none',
-            highlightthickness=0,
+            highlightthickness=1,
+            highlightbackground=COLORS['border'],
             relief='flat'
         )
-        self.match_listbox.pack(fill='both', expand=True)
+        match_scrollbar = ttk.Scrollbar(match_list_frame, orient='vertical', command=self.match_listbox.yview)
+        self.match_listbox.configure(yscrollcommand=match_scrollbar.set)
+        
+        self.match_listbox.pack(side='left', fill='both', expand=True)
+        match_scrollbar.pack(side='right', fill='y')
         self.match_listbox.bind('<<ListboxSelect>>', self._on_match_select)
         
         # Right panel - Match editor

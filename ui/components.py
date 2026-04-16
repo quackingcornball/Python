@@ -7,6 +7,68 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Callable, Optional, List, Dict, Any
 from config import COLORS, FONTS, PADDING, SPACING
+from core.calculations import format_overs
+
+
+class ScrollableFrame(tk.Frame):
+    """A scrollable frame container"""
+    
+    def __init__(self, parent, **kwargs):
+        bg = kwargs.pop('bg', COLORS['background'])
+        super().__init__(parent, bg=bg, **kwargs)
+        
+        # Create canvas with scrollbar
+        self.canvas = tk.Canvas(self, bg=bg, highlightthickness=0)
+        self.scrollbar = ttk.Scrollbar(self, orient='vertical', command=self.canvas.yview)
+        self.scrollable_frame = tk.Frame(self.canvas, bg=bg)
+        
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        )
+        
+        self.canvas_frame = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        
+        # Bind canvas resize to update inner frame width
+        self.canvas.bind('<Configure>', self._on_canvas_configure)
+        
+        # Pack widgets
+        self.canvas.pack(side='left', fill='both', expand=True)
+        self.scrollbar.pack(side='right', fill='y')
+        
+        # Bind mousewheel
+        self.scrollable_frame.bind('<Enter>', self._bind_mousewheel)
+        self.scrollable_frame.bind('<Leave>', self._unbind_mousewheel)
+    
+    def _on_canvas_configure(self, event):
+        """Update the inner frame width to match canvas width"""
+        self.canvas.itemconfig(self.canvas_frame, width=event.width)
+    
+    def _bind_mousewheel(self, event):
+        """Bind mousewheel to scroll"""
+        self.canvas.bind_all('<MouseWheel>', self._on_mousewheel)
+        self.canvas.bind_all('<Button-4>', self._on_mousewheel)
+        self.canvas.bind_all('<Button-5>', self._on_mousewheel)
+    
+    def _unbind_mousewheel(self, event):
+        """Unbind mousewheel"""
+        self.canvas.unbind_all('<MouseWheel>')
+        self.canvas.unbind_all('<Button-4>')
+        self.canvas.unbind_all('<Button-5>')
+    
+    def _on_mousewheel(self, event):
+        """Handle mousewheel scroll"""
+        if event.num == 4:
+            self.canvas.yview_scroll(-1, 'units')
+        elif event.num == 5:
+            self.canvas.yview_scroll(1, 'units')
+        else:
+            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), 'units')
+    
+    def get_frame(self):
+        """Return the scrollable frame to add content to"""
+        return self.scrollable_frame
 
 
 class StyledFrame(tk.Frame):
@@ -130,7 +192,7 @@ class ScoreDisplay(tk.Frame):
     def update_score(self, runs: int, wickets: int, overs: float, run_rate: float):
         """Update the score display"""
         self.score_var.set(f"{runs}/{wickets}")
-        self.overs_var.set(f"{overs} overs")
+        self.overs_var.set(f"{format_overs(overs)} overs")
         self.run_rate_var.set(f"RR: {run_rate:.2f}")
 
 
@@ -171,18 +233,18 @@ class StatusBadge(tk.Label):
 class DataTable(tk.Frame):
     """Table component using Treeview"""
     
-    def __init__(self, parent, columns: List[str], **kwargs):
+    def __init__(self, parent, columns: List[str], height: int = 8, **kwargs):
         super().__init__(parent, bg=COLORS['card_bg'], **kwargs)
         
         self.columns = columns
         
-        # Create Treeview with more height
+        # Create Treeview with configurable height
         self.tree = ttk.Treeview(
             self,
             columns=columns,
             show='headings',
             selectmode='browse',
-            height=6
+            height=height
         )
         
         # Configure style
