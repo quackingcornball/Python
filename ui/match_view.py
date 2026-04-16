@@ -458,31 +458,54 @@ class MatchView(tk.Frame):
             fg=COLORS['text_primary']
         ).pack(anchor='w')
         
+        # Row 1: Basic extras
         extras_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
         extras_frame.pack(fill='x', pady=(0, SPACING // 2))
         
-        for extra in EXTRA_OPTIONS:
+        # Map display name to internal code
+        extra_buttons = [
+            ("Wide", "WD"),
+            ("No Ball", "NB"),
+            ("Bye", "BYE"),
+            ("Leg Bye", "LB")
+        ]
+        for label, code in extra_buttons:
             btn = StyledButton(
                 extras_frame,
-                text=extra,
+                text=label,
                 variant='warning',
-                command=lambda e=extra: self._record_extra(e),
-                width=5
+                command=lambda c=code: self._record_extra(c),
+                width=7
             )
             btn.pack(side='left', padx=(0, 6))
         
-        # Extras + Runs (common combinations)
-        extras_runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
-        extras_runs_frame.pack(fill='x', pady=(0, SPACING))
+        # Row 2: Wide + Runs combinations
+        wide_runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        wide_runs_frame.pack(fill='x', pady=(0, SPACING // 2))
         
-        extras_combos = [("WD+1", "WD", 1), ("WD+2", "WD", 2), ("WD+4", "WD", 4), ("NB+1", "NB", 1), ("NB+4", "NB", 4)]
-        for label, extra_type, extra_runs in extras_combos:
+        wide_combos = [("Wide +1", "WD", 1), ("Wide +2", "WD", 2), ("Wide +4", "WD", 4)]
+        for label, extra_type, extra_runs in wide_combos:
             btn = StyledButton(
-                extras_runs_frame,
+                wide_runs_frame,
                 text=label,
                 variant='warning',
                 command=lambda e=extra_type, r=extra_runs: self._record_extra_with_runs(e, r),
-                width=5
+                width=7
+            )
+            btn.pack(side='left', padx=(0, 6))
+        
+        # Row 3: No Ball + Runs combinations
+        nb_runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        nb_runs_frame.pack(fill='x', pady=(0, SPACING))
+        
+        nb_combos = [("No Ball +1", "NB", 1), ("No Ball +4", "NB", 4), ("No Ball +6", "NB", 6)]
+        for label, extra_type, extra_runs in nb_combos:
+            btn = StyledButton(
+                nb_runs_frame,
+                text=label,
+                variant='warning',
+                command=lambda e=extra_type, r=extra_runs: self._record_extra_with_runs(e, r),
+                width=9
             )
             btn.pack(side='left', padx=(0, 6))
         
@@ -497,29 +520,30 @@ class MatchView(tk.Frame):
             fg=COLORS['text_primary']
         ).pack(anchor='w')
         
+        # Row 1: Main wicket button
         wicket_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
         wicket_frame.pack(fill='x', pady=(0, SPACING // 2))
         
         wicket_btn = StyledButton(
             wicket_frame,
-            text="WICKET (0 runs)",
+            text="OUT!",
             variant='danger',
             command=lambda: self._record_wicket_with_runs(0)
         )
-        wicket_btn.pack(side='left', padx=(0, 6), fill='x', expand=True)
+        wicket_btn.pack(side='left', padx=(0, 6))
         
-        # Wicket + Runs (e.g., run out while taking a run)
+        # Row 2: Wicket + Runs (run out scenarios)
         wicket_runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
         wicket_runs_frame.pack(fill='x', pady=(0, SPACING + 4))
         
-        wicket_combos = [("W+1", 1), ("W+2", 2), ("W+3", 3)]
+        wicket_combos = [("Run Out +1", 1), ("Run Out +2", 2), ("Run Out +3", 3)]
         for label, runs in wicket_combos:
             btn = StyledButton(
                 wicket_runs_frame,
                 text=label,
                 variant='danger',
                 command=lambda r=runs: self._record_wicket_with_runs(r),
-                width=5
+                width=9
             )
             btn.pack(side='left', padx=(0, 6))
         
