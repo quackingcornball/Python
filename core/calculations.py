@@ -8,18 +8,44 @@ from typing import List, Dict, Any, Optional, Tuple
 
 
 def calculate_run_rate(runs: int, overs: float) -> float:
-    """Calculate current run rate"""
+    """Calculate current run rate
+    
+    Note: overs is in cricket format (e.g., 5.3 = 5 overs and 3 balls)
+    We need to convert to actual overs (5.3 -> 5.5 overs) for calculation
+    """
     if overs <= 0:
         return 0.0
-    return round(runs / overs, 2)
+    
+    # Convert cricket overs format to actual overs
+    # e.g., 5.3 means 5 overs and 3 balls = 5 + 3/6 = 5.5 actual overs
+    whole_overs = int(overs)
+    balls = round((overs - whole_overs) * 10)  # Get balls from decimal (0.3 -> 3)
+    actual_overs = whole_overs + (balls / 6)
+    
+    if actual_overs <= 0:
+        return 0.0
+    
+    return round(runs / actual_overs, 2)
 
 
 def calculate_required_run_rate(target: int, current_runs: int, remaining_overs: float) -> float:
-    """Calculate required run rate to achieve target"""
+    """Calculate required run rate to achieve target
+    
+    Note: remaining_overs is in cricket format (e.g., 5.3 = 5 overs and 3 balls)
+    """
     runs_needed = target - current_runs
     if remaining_overs <= 0 or runs_needed <= 0:
         return 0.0
-    return round(runs_needed / remaining_overs, 2)
+    
+    # Convert cricket overs format to actual overs
+    whole_overs = int(remaining_overs)
+    balls = round((remaining_overs - whole_overs) * 10)
+    actual_overs = whole_overs + (balls / 6)
+    
+    if actual_overs <= 0:
+        return 0.0
+    
+    return round(runs_needed / actual_overs, 2)
 
 
 def calculate_strike_rate(runs: int, balls: int) -> float:
@@ -30,10 +56,22 @@ def calculate_strike_rate(runs: int, balls: int) -> float:
 
 
 def calculate_economy(runs: int, overs: float) -> float:
-    """Calculate bowler economy rate"""
+    """Calculate bowler economy rate
+    
+    Note: overs is in cricket format (e.g., 5.3 = 5 overs and 3 balls)
+    """
     if overs <= 0:
         return 0.0
-    return round(runs / overs, 2)
+    
+    # Convert cricket overs format to actual overs
+    whole_overs = int(overs)
+    balls = round((overs - whole_overs) * 10)
+    actual_overs = whole_overs + (balls / 6)
+    
+    if actual_overs <= 0:
+        return 0.0
+    
+    return round(runs / actual_overs, 2)
 
 
 def overs_to_balls(overs: float) -> int:
@@ -51,11 +89,22 @@ def balls_to_overs(balls: int) -> float:
 
 
 def calculate_projected_score(current_runs: int, current_overs: float, total_overs: int) -> int:
-    """Calculate projected score based on current run rate"""
+    """Calculate projected score based on current run rate
+    
+    Note: current_overs is in cricket format (e.g., 5.3 = 5 overs and 3 balls)
+    """
     if current_overs <= 0:
         return current_runs
     
-    run_rate = current_runs / current_overs
+    # Convert cricket overs format to actual overs
+    whole_overs = int(current_overs)
+    balls = round((current_overs - whole_overs) * 10)
+    actual_overs = whole_overs + (balls / 6)
+    
+    if actual_overs <= 0:
+        return current_runs
+    
+    run_rate = current_runs / actual_overs
     projected = int(run_rate * total_overs)
     return projected
 

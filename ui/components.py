@@ -250,15 +250,23 @@ class BallTimeline(tk.Frame):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, bg=COLORS['card_bg'], **kwargs)
         
+        # Configure frame to have minimum height
+        self.configure(height=80)
+        self.pack_propagate(False)
+        
         self.canvas = tk.Canvas(
             self,
             bg=COLORS['card_bg'],
             highlightthickness=0,
-            height=70
+            height=80,
+            width=600
         )
-        self.canvas.pack(fill='x', expand=True, pady=(SPACING // 2, SPACING // 2))
+        self.canvas.pack(fill='both', expand=True, pady=(SPACING // 4, SPACING // 4))
         
         self.balls = []
+        
+        # Bind resize event to redraw
+        self.canvas.bind('<Configure>', lambda e: self._redraw())
     
     def add_ball(self, runs: int, is_wicket: bool = False, extra_type: Optional[str] = None):
         """Add a ball to the timeline"""
@@ -279,13 +287,29 @@ class BallTimeline(tk.Frame):
         """Redraw the timeline"""
         self.canvas.delete('all')
         
-        x = 16
-        y = 35
+        # Get canvas dimensions
+        canvas_height = self.canvas.winfo_height()
+        if canvas_height < 10:  # Not yet rendered
+            canvas_height = 80
+        
+        x = 20
+        y = canvas_height // 2
         radius = 18
-        ball_spacing = 10
+        ball_spacing = 12
         
         # Only show last 18 balls (3 overs)
         visible_balls = self.balls[-18:]
+        
+        # Draw "No balls yet" if empty
+        if not visible_balls:
+            self.canvas.create_text(
+                100, y,
+                text="No balls recorded yet",
+                fill=COLORS['text_secondary'],
+                font=FONTS['body'],
+                anchor='w'
+            )
+            return
         
         for i, ball in enumerate(visible_balls):
             # Determine color
@@ -302,12 +326,13 @@ class BallTimeline(tk.Frame):
                 color = COLORS['primary']
                 text = str(ball['runs'])
             
-            # Draw circle
+            # Draw circle with border for better visibility
             self.canvas.create_oval(
                 x - radius, y - radius,
                 x + radius, y + radius,
                 fill=color,
-                outline=''
+                outline=COLORS['border'],
+                width=1
             )
             
             # Draw text
@@ -315,7 +340,7 @@ class BallTimeline(tk.Frame):
                 x, y,
                 text=text,
                 fill='white',
-                font=FONTS['body']
+                font=FONTS['button']
             )
             
             x += radius * 2 + ball_spacing
@@ -323,12 +348,12 @@ class BallTimeline(tk.Frame):
             # Add over separator
             if (i + 1) % 6 == 0 and i < len(visible_balls) - 1:
                 self.canvas.create_line(
-                    x - 4, y - radius - 8,
-                    x - 4, y + radius + 8,
+                    x - 4, y - radius - 10,
+                    x - 4, y + radius + 10,
                     fill=COLORS['border'],
                     width=2
                 )
-                x += 16
+                x += 18
 
 
 class LiveIndicator(tk.Frame):
