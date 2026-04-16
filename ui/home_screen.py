@@ -61,7 +61,7 @@ class HomeScreen(tk.Frame):
             
             create_btn = StyledButton(
                 admin_frame,
-                text="+ Create Match",
+                text="Manage Matches",
                 variant='primary',
                 command=self.on_create_match
             )

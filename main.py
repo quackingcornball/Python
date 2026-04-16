@@ -146,7 +146,7 @@ class CricketScoringApp:
         
         admin_desc = tk.Label(
             desc_frame,
-            text="Admin (Scorer): Create and manage matches, update live scores",
+            text="Admin (Scorer): Create, edit, and delete matches, update live scores",
             font=FONTS['body'],
             bg=COLORS['card_bg'],
             fg=COLORS['text_secondary'],
