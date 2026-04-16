@@ -195,7 +195,7 @@ class MatchView(tk.Frame):
         content = scroll_container.get_frame()
         content.configure(padx=PADDING, pady=PADDING)
         
-        # Top section: Score + Controls side by side
+        # Top section: Score + Controls side by side (different layout for admin vs viewer)
         top_section = tk.Frame(content, bg=COLORS['background'])
         top_section.pack(fill='x', pady=(0, SPACING))
         
@@ -205,7 +205,7 @@ class MatchView(tk.Frame):
         
         # Scoreboard
         scoreboard_frame = CardFrame(left_panel, title="Scoreboard")
-        scoreboard_frame.pack(fill='x')
+        scoreboard_frame.pack(fill='x', expand=not self.is_admin)
         
         self.score_display = ScoreDisplay(scoreboard_frame)
         self.score_display.pack(pady=(SPACING // 2, SPACING))
@@ -250,11 +250,10 @@ class MatchView(tk.Frame):
         self.ball_timeline.pack(fill='x', pady=(SPACING // 4, SPACING // 4))
         
         # Right side - Controls (admin only)
-        right_panel = tk.Frame(top_section, bg=COLORS['background'], width=480)
-        right_panel.pack(side='right', fill='y', padx=(SPACING + 4, 0))
-        right_panel.pack_propagate(False)
-        
         if self.is_admin:
+            right_panel = tk.Frame(top_section, bg=COLORS['background'], width=480)
+            right_panel.pack(side='right', fill='y', padx=(SPACING + 4, 0))
+            right_panel.pack_propagate(False)
             self._create_admin_controls(right_panel)
         
         # Middle section: Scorecard (Batting & Bowling tables)
@@ -424,67 +423,105 @@ class MatchView(tk.Frame):
         )
         add_bowler_btn.pack(side='left', padx=(SPACING // 2, 0))
         
-        # Run buttons
-        runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
-        runs_frame.pack(fill='x', pady=(0, SPACING + 4))
-        
+        # ===== RUNS SECTION =====
+        runs_label_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        runs_label_frame.pack(fill='x', pady=(0, 4))
         tk.Label(
-            runs_frame,
-            text="Runs:",
+            runs_label_frame,
+            text="Runs",
             font=FONTS['subheading'],
             bg=COLORS['card_bg'],
-            fg=COLORS['text_secondary']
-        ).pack(side='left', padx=(0, SPACING // 2))
+            fg=COLORS['text_primary']
+        ).pack(anchor='w')
         
-        runs_buttons_frame = tk.Frame(runs_frame, bg=COLORS['card_bg'])
-        runs_buttons_frame.pack(side='left', fill='x', expand=True)
+        runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        runs_frame.pack(fill='x', pady=(0, SPACING))
         
         for i, runs in enumerate(RUN_OPTIONS):
             btn = StyledButton(
-                runs_buttons_frame,
+                runs_frame,
                 text=str(runs),
                 variant='success' if runs in [4, 6] else 'secondary',
                 command=lambda r=runs: self._record_runs(r),
-                width=4
+                width=5
             )
-            btn.grid(row=0, column=i, padx=(0, 6), sticky='w')
+            btn.pack(side='left', padx=(0, 6))
         
-        # Extras buttons
-        extras_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
-        extras_frame.pack(fill='x', pady=(0, SPACING + 4))
-        
+        # ===== EXTRAS SECTION =====
+        extras_label_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        extras_label_frame.pack(fill='x', pady=(0, 4))
         tk.Label(
-            extras_frame,
-            text="Extras:",
+            extras_label_frame,
+            text="Extras",
             font=FONTS['subheading'],
             bg=COLORS['card_bg'],
-            fg=COLORS['text_secondary']
-        ).pack(side='left', padx=(0, SPACING // 2))
+            fg=COLORS['text_primary']
+        ).pack(anchor='w')
         
-        extras_buttons_frame = tk.Frame(extras_frame, bg=COLORS['card_bg'])
-        extras_buttons_frame.pack(side='left', fill='x', expand=True)
+        extras_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        extras_frame.pack(fill='x', pady=(0, SPACING // 2))
         
-        for i, extra in enumerate(EXTRA_OPTIONS):
+        for extra in EXTRA_OPTIONS:
             btn = StyledButton(
-                extras_buttons_frame,
+                extras_frame,
                 text=extra,
                 variant='warning',
                 command=lambda e=extra: self._record_extra(e),
                 width=5
             )
-            btn.grid(row=0, column=i, padx=(0, 6), sticky='w')
+            btn.pack(side='left', padx=(0, 6))
         
-        # Wicket button
+        # Extras + Runs (common combinations)
+        extras_runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        extras_runs_frame.pack(fill='x', pady=(0, SPACING))
+        
+        extras_combos = [("WD+1", "WD", 1), ("WD+2", "WD", 2), ("WD+4", "WD", 4), ("NB+1", "NB", 1), ("NB+4", "NB", 4)]
+        for label, extra_type, extra_runs in extras_combos:
+            btn = StyledButton(
+                extras_runs_frame,
+                text=label,
+                variant='warning',
+                command=lambda e=extra_type, r=extra_runs: self._record_extra_with_runs(e, r),
+                width=5
+            )
+            btn.pack(side='left', padx=(0, 6))
+        
+        # ===== WICKET SECTION =====
+        wicket_label_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        wicket_label_frame.pack(fill='x', pady=(0, 4))
+        tk.Label(
+            wicket_label_frame,
+            text="Wicket",
+            font=FONTS['subheading'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_primary']
+        ).pack(anchor='w')
+        
         wicket_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
-        wicket_frame.pack(fill='x', pady=(0, SPACING + 4))
+        wicket_frame.pack(fill='x', pady=(0, SPACING // 2))
         
         wicket_btn = StyledButton(
             wicket_frame,
-            text="WICKET",
+            text="WICKET (0 runs)",
             variant='danger',
-            command=self._record_wicket
+            command=lambda: self._record_wicket_with_runs(0)
         )
-        wicket_btn.pack(fill='x', ipady=4)
+        wicket_btn.pack(side='left', padx=(0, 6), fill='x', expand=True)
+        
+        # Wicket + Runs (e.g., run out while taking a run)
+        wicket_runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        wicket_runs_frame.pack(fill='x', pady=(0, SPACING + 4))
+        
+        wicket_combos = [("W+1", 1), ("W+2", 2), ("W+3", 3)]
+        for label, runs in wicket_combos:
+            btn = StyledButton(
+                wicket_runs_frame,
+                text=label,
+                variant='danger',
+                command=lambda r=runs: self._record_wicket_with_runs(r),
+                width=5
+            )
+            btn.pack(side='left', padx=(0, 6))
         
         # Action buttons row 1
         actions_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
@@ -960,6 +997,51 @@ class MatchView(tk.Frame):
         if dismissal:
             self.match = MatchEngine.record_ball(
                 self.match,
+                is_wicket=True,
+                dismissal_type=dismissal
+            )
+            self._save_and_refresh()
+    
+    def _record_extra_with_runs(self, extra_type: str, extra_runs: int):
+        """Record an extra with specified additional runs (for quick buttons)"""
+        if not self.match:
+            return
+        
+        innings = self.match['innings'][self.match['current_innings']]
+        bowler = MatchEngine.get_current_bowler(innings)
+        
+        if not bowler:
+            messagebox.showwarning("Warning", "Please add a bowler first.")
+            return
+        
+        self.match = MatchEngine.record_ball(
+            self.match,
+            extra_type=extra_type,
+            extra_runs=extra_runs
+        )
+        self._save_and_refresh()
+    
+    def _record_wicket_with_runs(self, runs: int):
+        """Record a wicket with runs scored (e.g., run out while taking a run)"""
+        if not self.match or not self._validate_players():
+            return
+        
+        dismissal_types = ['Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit Wicket']
+        
+        # For wickets with runs, default to Run Out
+        default_dismissal = 'Run Out' if runs > 0 else 'Bowled'
+        
+        # Simple dialog for dismissal type
+        dismissal = simpledialog.askstring(
+            "Wicket",
+            f"Dismissal type ({', '.join(dismissal_types)}):",
+            initialvalue=default_dismissal
+        )
+        
+        if dismissal:
+            self.match = MatchEngine.record_ball(
+                self.match,
+                runs=runs,
                 is_wicket=True,
                 dismissal_type=dismissal
             )
