@@ -223,6 +223,19 @@ class MatchView(tk.Frame):
         )
         self.target_label.pack()
         
+        # Extras breakdown
+        extras_info_frame = tk.Frame(scoreboard_frame, bg=COLORS['card_bg'])
+        extras_info_frame.pack(fill='x', pady=(SPACING // 4, SPACING // 2))
+        
+        self.extras_info_label = tk.Label(
+            extras_info_frame,
+            text="",
+            font=FONTS['small'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['extras']
+        )
+        self.extras_info_label.pack()
+        
         # Insights
         insights_frame = tk.Frame(scoreboard_frame, bg=COLORS['card_bg'])
         insights_frame.pack(fill='x', pady=(SPACING // 2, SPACING // 2))
@@ -689,6 +702,20 @@ class MatchView(tk.Frame):
         else:
             self.target_label.configure(text="")
             self.insight_labels['required_rr'].configure(text="")
+        
+        # Update extras breakdown
+        extras = innings.get('extras', {})
+        wides = extras.get('wides', 0)
+        no_balls = extras.get('no_balls', 0)
+        byes = extras.get('byes', 0)
+        leg_byes = extras.get('leg_byes', 0)
+        total_extras = wides + no_balls + byes + leg_byes
+        
+        if total_extras > 0:
+            extras_text = f"Extras: {total_extras} (Wd {wides}, NB {no_balls}, B {byes}, LB {leg_byes})"
+            self.extras_info_label.configure(text=extras_text)
+        else:
+            self.extras_info_label.configure(text="")
         
         # Update insights
         total_overs = self.match.get('total_overs')
