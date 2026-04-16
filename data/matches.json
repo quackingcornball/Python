@@ -1,0 +1,161 @@
+{
+  "matches": {
+    "5950050f": {
+      "match_id": "5950050f",
+      "teams": [
+        "India",
+        "Pakistan"
+      ],
+      "format": "T20",
+      "total_overs": 20,
+      "total_innings": 2,
+      "toss_winner": "India",
+      "toss_decision": "bat",
+      "status": "Live",
+      "current_innings": 0,
+      "innings": [
+        {
+          "batting_team": "India",
+          "bowling_team": "Pakistan",
+          "runs": 9,
+          "wickets": 0,
+          "overs": 1.0,
+          "balls": [
+            {
+              "over": 0,
+              "ball": 1,
+              "batsman": "Virat",
+              "bowler": "Malinga",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": false,
+              "dismissal": null,
+              "is_boundary": false,
+              "is_six": false
+            },
+            {
+              "over": 0,
+              "ball": 2,
+              "batsman": "Virat",
+              "bowler": "Malinga",
+              "runs": 2,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": false,
+              "dismissal": null,
+              "is_boundary": false,
+              "is_six": false
+            },
+            {
+              "over": 0,
+              "ball": 3,
+              "batsman": "Virat",
+              "bowler": "Malinga",
+              "runs": 4,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": false,
+              "dismissal": null,
+              "is_boundary": true,
+              "is_six": false
+            },
+            {
+              "over": 0,
+              "ball": 4,
+              "batsman": "Virat",
+              "bowler": "Malinga",
+              "runs": 2,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": false,
+              "dismissal": null,
+              "is_boundary": false,
+              "is_six": false
+            },
+            {
+              "over": 0,
+              "ball": 5,
+              "batsman": "Virat",
+              "bowler": "Malinga",
+              "runs": 1,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": false,
+              "dismissal": null,
+              "is_boundary": false,
+              "is_six": false
+            },
+            {
+              "over": 0,
+              "ball": 6,
+              "batsman": "Yuvraj",
+              "bowler": "Malinga",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": false,
+              "dismissal": null,
+              "is_boundary": false,
+              "is_six": false
+            }
+          ],
+          "batsmen": [
+            {
+              "id": "89b71663",
+              "name": "Virat",
+              "runs": 9,
+              "balls": 5,
+              "fours": 1,
+              "sixes": 0,
+              "is_out": false,
+              "dismissal": null,
+              "on_strike": true
+            },
+            {
+              "id": "7207e74e",
+              "name": "Yuvraj",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": false,
+              "dismissal": null,
+              "on_strike": false
+            }
+          ],
+          "bowlers": [
+            {
+              "id": "ab793ce5",
+              "name": "Malinga",
+              "overs": 1.0,
+              "balls": 6,
+              "maidens": 0,
+              "runs": 9,
+              "wickets": 0
+            }
+          ],
+          "current_batsmen": [
+            "89b71663",
+            "7207e74e"
+          ],
+          "current_bowler": "ab793ce5",
+          "extras": {
+            "wides": 0,
+            "no_balls": 0,
+            "byes": 0,
+            "leg_byes": 0
+          },
+          "fall_of_wickets": [],
+          "is_completed": false,
+          "declared": false
+        }
+      ],
+      "target": null,
+      "result": null,
+      "created_at": "2026-04-16T21:41:41.196110",
+      "last_updated": "2026-04-16T21:43:06.650316"
+    }
+  },
+  "last_updated": "2026-04-16T21:43:06.650316"
+}
