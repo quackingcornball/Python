@@ -486,7 +486,7 @@ class MatchView(tk.Frame):
         )
         wicket_btn.pack(fill='x', ipady=4)
         
-        # Action buttons
+        # Action buttons row 1
         actions_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
         actions_frame.pack(fill='x', pady=(SPACING // 2, 0))
         
@@ -513,6 +513,34 @@ class MatchView(tk.Frame):
             command=self._declare_innings
         )
         self.declare_btn.pack(side='right')
+        
+        # Action buttons row 2 - Edit stats
+        edit_actions_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        edit_actions_frame.pack(fill='x', pady=(SPACING // 2, 0))
+        
+        edit_batsman_btn = StyledButton(
+            edit_actions_frame,
+            text="Edit Batsman Stats",
+            variant='warning',
+            command=self._edit_batsman_stats
+        )
+        edit_batsman_btn.pack(side='left')
+        
+        edit_bowler_btn = StyledButton(
+            edit_actions_frame,
+            text="Edit Bowler Stats",
+            variant='warning',
+            command=self._edit_bowler_stats
+        )
+        edit_bowler_btn.pack(side='left', padx=(SPACING // 2, 0))
+        
+        swap_strike_btn = StyledButton(
+            edit_actions_frame,
+            text="Swap Strike",
+            variant='secondary',
+            command=self._swap_strike
+        )
+        swap_strike_btn.pack(side='right')
     
     def _create_charts(self, parent):
         """Create charts section - full width at bottom"""
@@ -962,6 +990,243 @@ class MatchView(tk.Frame):
         if messagebox.askyesno("Confirm", "Declare this innings?"):
             self.match = MatchEngine.declare_innings(self.match)
             self._save_and_refresh()
+    
+    def _edit_batsman_stats(self):
+        """Edit a batsman's stats (runs, balls, 4s, 6s)"""
+        if not self.match:
+            return
+        
+        innings = self.match['innings'][self.match['current_innings']]
+        batsmen = innings.get('batsmen', [])
+        
+        if not batsmen:
+            messagebox.showwarning("Warning", "No batsmen in current innings.")
+            return
+        
+        # Show dialog to select batsman
+        batsman_names = [f"{b['name']} ({b['runs']}/{b['balls']})" for b in batsmen]
+        dialog = PlayerSelectDialog(
+            self,
+            title="Select Batsman to Edit",
+            players=batsman_names,
+            allow_custom=False
+        )
+        
+        if dialog.result:
+            # Find the selected batsman
+            idx = batsman_names.index(dialog.result)
+            batsman = batsmen[idx]
+            
+            # Show edit dialog
+            self._show_batsman_edit_dialog(batsman)
+    
+    def _show_batsman_edit_dialog(self, batsman: Dict[str, Any]):
+        """Show dialog to edit batsman stats"""
+        dialog = tk.Toplevel(self)
+        dialog.title(f"Edit Stats: {batsman['name']}")
+        dialog.geometry("320x300")
+        dialog.configure(bg=COLORS['background'])
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        # Center the dialog
+        dialog.update_idletasks()
+        x = self.winfo_rootx() + (self.winfo_width() // 2) - 160
+        y = self.winfo_rooty() + (self.winfo_height() // 2) - 150
+        dialog.geometry(f"+{x}+{y}")
+        
+        # Form fields
+        form_frame = tk.Frame(dialog, bg=COLORS['background'])
+        form_frame.pack(fill='both', expand=True, padx=PADDING, pady=PADDING)
+        
+        # Runs
+        runs_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        runs_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(runs_frame, text="Runs:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        runs_var = tk.StringVar(value=str(batsman.get('runs', 0)))
+        runs_entry = tk.Entry(runs_frame, textvariable=runs_var, font=FONTS['body'], width=10)
+        runs_entry.pack(side='left')
+        
+        # Balls
+        balls_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        balls_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(balls_frame, text="Balls:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        balls_var = tk.StringVar(value=str(batsman.get('balls', 0)))
+        balls_entry = tk.Entry(balls_frame, textvariable=balls_var, font=FONTS['body'], width=10)
+        balls_entry.pack(side='left')
+        
+        # Fours
+        fours_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        fours_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(fours_frame, text="Fours:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        fours_var = tk.StringVar(value=str(batsman.get('fours', 0)))
+        fours_entry = tk.Entry(fours_frame, textvariable=fours_var, font=FONTS['body'], width=10)
+        fours_entry.pack(side='left')
+        
+        # Sixes
+        sixes_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        sixes_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(sixes_frame, text="Sixes:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        sixes_var = tk.StringVar(value=str(batsman.get('sixes', 0)))
+        sixes_entry = tk.Entry(sixes_frame, textvariable=sixes_var, font=FONTS['body'], width=10)
+        sixes_entry.pack(side='left')
+        
+        def save_changes():
+            try:
+                batsman['runs'] = int(runs_var.get())
+                batsman['balls'] = int(balls_var.get())
+                batsman['fours'] = int(fours_var.get())
+                batsman['sixes'] = int(sixes_var.get())
+                
+                # Update innings total (recalculate from all batsmen + extras)
+                innings = self.match['innings'][self.match['current_innings']]
+                total_runs = sum(b.get('runs', 0) for b in innings.get('batsmen', []))
+                extras = innings.get('extras', {})
+                total_extras = sum(extras.values())
+                innings['runs'] = total_runs + total_extras
+                
+                self._save_and_refresh()
+                dialog.destroy()
+                messagebox.showinfo("Success", f"Updated stats for {batsman['name']}")
+            except ValueError:
+                messagebox.showerror("Error", "Please enter valid numbers.")
+        
+        # Buttons
+        btn_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        btn_frame.pack(fill='x', pady=(SPACING, 0))
+        
+        cancel_btn = StyledButton(btn_frame, text="Cancel", variant='secondary', command=dialog.destroy)
+        cancel_btn.pack(side='left')
+        
+        save_btn = StyledButton(btn_frame, text="Save", variant='primary', command=save_changes)
+        save_btn.pack(side='right')
+        
+        dialog.wait_window()
+    
+    def _edit_bowler_stats(self):
+        """Edit a bowler's stats (overs, runs, wickets)"""
+        if not self.match:
+            return
+        
+        innings = self.match['innings'][self.match['current_innings']]
+        bowlers = innings.get('bowlers', [])
+        
+        if not bowlers:
+            messagebox.showwarning("Warning", "No bowlers in current innings.")
+            return
+        
+        # Show dialog to select bowler
+        bowler_names = [f"{b['name']} ({b.get('overs', 0)}-{b.get('runs', 0)}-{b.get('wickets', 0)})" for b in bowlers]
+        dialog = PlayerSelectDialog(
+            self,
+            title="Select Bowler to Edit",
+            players=bowler_names,
+            allow_custom=False
+        )
+        
+        if dialog.result:
+            # Find the selected bowler
+            idx = bowler_names.index(dialog.result)
+            bowler = bowlers[idx]
+            
+            # Show edit dialog
+            self._show_bowler_edit_dialog(bowler)
+    
+    def _show_bowler_edit_dialog(self, bowler: Dict[str, Any]):
+        """Show dialog to edit bowler stats"""
+        dialog = tk.Toplevel(self)
+        dialog.title(f"Edit Stats: {bowler['name']}")
+        dialog.geometry("320x280")
+        dialog.configure(bg=COLORS['background'])
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        # Center the dialog
+        dialog.update_idletasks()
+        x = self.winfo_rootx() + (self.winfo_width() // 2) - 160
+        y = self.winfo_rooty() + (self.winfo_height() // 2) - 140
+        dialog.geometry(f"+{x}+{y}")
+        
+        # Form fields
+        form_frame = tk.Frame(dialog, bg=COLORS['background'])
+        form_frame.pack(fill='both', expand=True, padx=PADDING, pady=PADDING)
+        
+        # Overs (as decimal, e.g., 4.3 = 4 overs 3 balls)
+        overs_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        overs_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(overs_frame, text="Overs:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        overs_var = tk.StringVar(value=str(bowler.get('overs', 0.0)))
+        overs_entry = tk.Entry(overs_frame, textvariable=overs_var, font=FONTS['body'], width=10)
+        overs_entry.pack(side='left')
+        tk.Label(overs_frame, text="(e.g., 4.3)", font=FONTS['small'], bg=COLORS['background'], fg=COLORS['text_secondary']).pack(side='left', padx=(SPACING // 2, 0))
+        
+        # Runs
+        runs_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        runs_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(runs_frame, text="Runs:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        runs_var = tk.StringVar(value=str(bowler.get('runs', 0)))
+        runs_entry = tk.Entry(runs_frame, textvariable=runs_var, font=FONTS['body'], width=10)
+        runs_entry.pack(side='left')
+        
+        # Wickets
+        wickets_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        wickets_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(wickets_frame, text="Wickets:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        wickets_var = tk.StringVar(value=str(bowler.get('wickets', 0)))
+        wickets_entry = tk.Entry(wickets_frame, textvariable=wickets_var, font=FONTS['body'], width=10)
+        wickets_entry.pack(side='left')
+        
+        # Maidens
+        maidens_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        maidens_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(maidens_frame, text="Maidens:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        maidens_var = tk.StringVar(value=str(bowler.get('maidens', 0)))
+        maidens_entry = tk.Entry(maidens_frame, textvariable=maidens_var, font=FONTS['body'], width=10)
+        maidens_entry.pack(side='left')
+        
+        def save_changes():
+            try:
+                bowler['overs'] = float(overs_var.get())
+                bowler['runs'] = int(runs_var.get())
+                bowler['wickets'] = int(wickets_var.get())
+                bowler['maidens'] = int(maidens_var.get())
+                
+                self._save_and_refresh()
+                dialog.destroy()
+                messagebox.showinfo("Success", f"Updated stats for {bowler['name']}")
+            except ValueError:
+                messagebox.showerror("Error", "Please enter valid numbers.")
+        
+        # Buttons
+        btn_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        btn_frame.pack(fill='x', pady=(SPACING, 0))
+        
+        cancel_btn = StyledButton(btn_frame, text="Cancel", variant='secondary', command=dialog.destroy)
+        cancel_btn.pack(side='left')
+        
+        save_btn = StyledButton(btn_frame, text="Save", variant='primary', command=save_changes)
+        save_btn.pack(side='right')
+        
+        dialog.wait_window()
+    
+    def _swap_strike(self):
+        """Manually swap the strike between batsmen"""
+        if not self.match:
+            return
+        
+        innings = self.match['innings'][self.match['current_innings']]
+        current_batsmen = innings.get('current_batsmen', [])
+        
+        if len(current_batsmen) < 2:
+            messagebox.showwarning("Warning", "Need 2 batsmen at the crease to swap strike.")
+            return
+        
+        # Swap strike
+        for batsman in innings.get('batsmen', []):
+            if batsman['id'] in current_batsmen:
+                batsman['on_strike'] = not batsman.get('on_strike', False)
+        
+        self._save_and_refresh()
     
     def _validate_players(self) -> bool:
         """Validate that required players are set"""

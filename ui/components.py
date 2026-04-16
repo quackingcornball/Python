@@ -94,8 +94,9 @@ class CardFrame(tk.Frame):
             highlightthickness=1
         )
         
+        self.title_label = None
         if title:
-            title_label = tk.Label(
+            self.title_label = tk.Label(
                 self,
                 text=title,
                 font=FONTS['heading'],
@@ -103,7 +104,7 @@ class CardFrame(tk.Frame):
                 fg=COLORS['text_primary'],
                 anchor='w'
             )
-            title_label.pack(fill='x', pady=(0, SPACING + 4))
+            self.title_label.pack(fill='x', pady=(0, SPACING + 4))
 
 
 class StyledButton(tk.Button):
