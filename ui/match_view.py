@@ -162,7 +162,7 @@ class MatchView(tk.Frame):
         self.bowling_table.pack(fill='both', expand=True, pady=(0, SPACING // 2))
         
         # Right side - Controls (admin) or Charts (viewer)
-        right_panel = tk.Frame(content, bg=COLORS['background'], width=420)
+        right_panel = tk.Frame(content, bg=COLORS['background'], width=480)
         right_panel.pack(side='right', fill='both', padx=(SPACING + 4, 0))
         right_panel.pack_propagate(False)
         
@@ -231,14 +231,18 @@ class MatchView(tk.Frame):
             fg=COLORS['text_secondary']
         ).pack(side='left', padx=(0, SPACING // 2))
         
-        for runs in RUN_OPTIONS:
+        runs_buttons_frame = tk.Frame(runs_frame, bg=COLORS['card_bg'])
+        runs_buttons_frame.pack(side='left', fill='x', expand=True)
+        
+        for i, runs in enumerate(RUN_OPTIONS):
             btn = StyledButton(
-                runs_frame,
+                runs_buttons_frame,
                 text=str(runs),
                 variant='success' if runs in [4, 6] else 'secondary',
-                command=lambda r=runs: self._record_runs(r)
+                command=lambda r=runs: self._record_runs(r),
+                width=4
             )
-            btn.pack(side='left', padx=(6, 0))
+            btn.grid(row=0, column=i, padx=(0, 6), sticky='w')
         
         # Extras buttons
         extras_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
@@ -252,14 +256,18 @@ class MatchView(tk.Frame):
             fg=COLORS['text_secondary']
         ).pack(side='left', padx=(0, SPACING // 2))
         
-        for extra in EXTRA_OPTIONS:
+        extras_buttons_frame = tk.Frame(extras_frame, bg=COLORS['card_bg'])
+        extras_buttons_frame.pack(side='left', fill='x', expand=True)
+        
+        for i, extra in enumerate(EXTRA_OPTIONS):
             btn = StyledButton(
-                extras_frame,
+                extras_buttons_frame,
                 text=extra,
                 variant='warning',
-                command=lambda e=extra: self._record_extra(e)
+                command=lambda e=extra: self._record_extra(e),
+                width=5
             )
-            btn.pack(side='left', padx=(6, 0))
+            btn.grid(row=0, column=i, padx=(0, 6), sticky='w')
         
         # Wicket button
         wicket_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])

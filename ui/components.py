@@ -81,8 +81,8 @@ class StyledButton(tk.Button):
             activeforeground=fg,
             relief='flat',
             cursor='hand2',
-            padx=20,
-            pady=10,
+            padx=14,
+            pady=8,
             **kwargs
         )
 

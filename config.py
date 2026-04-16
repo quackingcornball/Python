@@ -3,10 +3,10 @@ Configuration settings for Cricket Scoring System
 """
 
 # Window Settings
-WINDOW_WIDTH = 1200  # Default width (will adapt to screen)
-WINDOW_HEIGHT = 700  # Default height (will adapt to screen)
-MIN_WIDTH = 900      # Minimum window width
-MIN_HEIGHT = 600     # Minimum window height
+WINDOW_WIDTH = 1280  # Default width (will adapt to screen)
+WINDOW_HEIGHT = 720  # Default height (will adapt to screen)
+MIN_WIDTH = 1024     # Minimum window width
+MIN_HEIGHT = 640     # Minimum window height
 WINDOW_TITLE = "Live Cricket Scoring System"
 
 # Layout Settings
