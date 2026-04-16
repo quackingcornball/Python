@@ -221,15 +221,22 @@ class MatchEngine:
             elif extra_type == "NB":
                 innings["extras"]["no_balls"] += 1
                 innings["runs"] += 1  # No ball is always 1 extra run
+            elif extra_type == "BYE":
+                innings["extras"]["byes"] += extra_runs if extra_runs > 0 else 1
+            elif extra_type == "LB":
+                innings["extras"]["leg_byes"] += extra_runs if extra_runs > 0 else 1
         
         # Update batsman (only for non-wide deliveries)
+        # For byes and leg byes, batsman faces the ball but doesn't score the runs
         if extra_type != "WD":
             striker["balls"] += 1
-            striker["runs"] += runs
-            if runs == 4:
-                striker["fours"] += 1
-            elif runs == 6:
-                striker["sixes"] += 1
+            # Batsman only gets runs credited for non-bye extras
+            if extra_type not in ["BYE", "LB"]:
+                striker["runs"] += runs
+                if runs == 4:
+                    striker["fours"] += 1
+                elif runs == 6:
+                    striker["sixes"] += 1
         
         # Update bowler (only for legal deliveries that count)
         if extra_type not in ["WD", "NB"]:

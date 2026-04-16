@@ -999,18 +999,26 @@ class MatchView(tk.Frame):
         if not self.match:
             return
         
-        # For wides and no balls, ask for additional runs
-        extra_runs = 0
-        if extra_type in ['WD', 'NB']:
-            result = simpledialog.askinteger(
-                "Additional Runs",
-                f"Additional runs with {extra_type}:",
-                initialvalue=0,
-                minvalue=0,
-                maxvalue=6
-            )
-            if result is not None:
-                extra_runs = result
+        # For all extras, ask for runs (default 1 for basic extras)
+        extra_runs = 1  # Default to 1 run
+        extra_label = {
+            'WD': 'Wide',
+            'NB': 'No Ball',
+            'BYE': 'Bye',
+            'LB': 'Leg Bye'
+        }.get(extra_type, extra_type)
+        
+        result = simpledialog.askinteger(
+            f"{extra_label}",
+            f"Runs for {extra_label}:",
+            initialvalue=1,
+            minvalue=1,
+            maxvalue=6
+        )
+        if result is not None:
+            extra_runs = result
+        else:
+            return  # User cancelled
         
         innings = self.match['innings'][self.match['current_innings']]
         striker = MatchEngine.get_current_batsman(innings, on_strike=True)
