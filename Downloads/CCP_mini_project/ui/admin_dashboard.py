@@ -906,7 +906,12 @@ class AdminDashboard(tk.Frame):
         
         toss_winner, toss_decision = toss_result
         
-        # Set toss in match
+        # Store toss in REQUIRED format
+        match['toss'] = {
+            'winner': toss_winner,
+            'decision': toss_decision
+        }
+        # Also store in legacy format for backward compatibility
         match['toss_winner'] = toss_winner
         match['toss_decision'] = toss_decision
         
@@ -927,24 +932,28 @@ class AdminDashboard(tk.Frame):
             self.on_edit_match(self.selected_match_id)
     
     def _show_toss_popup(self, match: Dict[str, Any]) -> Optional[tuple]:
-        """Show toss popup dialog
+        """Show toss popup dialog with TWO mandatory steps:
+        
+        STEP 1: Select toss winner (Team A or Team B)
+        STEP 2: Select decision (Bat or Bowl)
         
         Returns (toss_winner, toss_decision) tuple or None if cancelled
+        The popup will NOT close until BOTH selections are made.
         """
         teams = match.get('teams', ['Team A', 'Team B'])
         
         # Create popup dialog
         dialog = tk.Toplevel(self)
         dialog.title("Toss")
-        dialog.geometry("350x280")
+        dialog.geometry("380x320")
         dialog.configure(bg=COLORS['background'])
         dialog.transient(self)
         dialog.grab_set()
         
         # Center dialog
         dialog.update_idletasks()
-        x = self.winfo_rootx() + (self.winfo_width() // 2) - 175
-        y = self.winfo_rooty() + (self.winfo_height() // 2) - 140
+        x = self.winfo_rootx() + (self.winfo_width() // 2) - 190
+        y = self.winfo_rooty() + (self.winfo_height() // 2) - 160
         dialog.geometry(f"+{x}+{y}")
         
         result = [None]  # Use list to store result in closure
@@ -952,16 +961,17 @@ class AdminDashboard(tk.Frame):
         form_frame = tk.Frame(dialog, bg=COLORS['background'])
         form_frame.pack(fill='both', expand=True, padx=PADDING, pady=PADDING)
         
-        # Step 1: Who won the toss?
+        # STEP 1: Who won the toss?
         tk.Label(
             form_frame,
-            text="Who won the toss?",
+            text="STEP 1: Who won the toss?",
             font=FONTS['heading'],
             bg=COLORS['background'],
             fg=COLORS['text_primary']
         ).pack(anchor='w', pady=(0, SPACING))
         
-        toss_winner_var = tk.StringVar(value=teams[0])
+        # Use empty string as initial value to force explicit selection
+        toss_winner_var = tk.StringVar(value="")
         
         toss_winner_frame = tk.Frame(form_frame, bg=COLORS['background'])
         toss_winner_frame.pack(fill='x', pady=(0, SPACING * 2))
@@ -975,7 +985,7 @@ class AdminDashboard(tk.Frame):
                 font=FONTS['body'],
                 bg=COLORS['background'],
                 fg=COLORS['text_primary'],
-                selectcolor=COLORS['background'],
+                selectcolor=COLORS['primary'],
                 activebackground=COLORS['background'],
                 indicatoron=0,
                 width=15,
@@ -984,19 +994,20 @@ class AdminDashboard(tk.Frame):
             )
             btn.pack(side='left', padx=(0, SPACING // 2))
         
-        # Step 2: Decision
+        # STEP 2: Decision (Bat or Bowl) - MANDATORY
         tk.Label(
             form_frame,
-            text="Decision:",
+            text="STEP 2: Choose bat or bowl",
             font=FONTS['heading'],
             bg=COLORS['background'],
             fg=COLORS['text_primary']
         ).pack(anchor='w', pady=(0, SPACING))
         
-        decision_var = tk.StringVar(value="bat")
+        # Use empty string to force explicit selection
+        decision_var = tk.StringVar(value="")
         
         decision_frame = tk.Frame(form_frame, bg=COLORS['background'])
-        decision_frame.pack(fill='x', pady=(0, SPACING * 2))
+        decision_frame.pack(fill='x', pady=(0, SPACING))
         
         for decision, label in [("bat", "Bat First"), ("bowl", "Bowl First")]:
             btn = tk.Radiobutton(
@@ -1007,7 +1018,7 @@ class AdminDashboard(tk.Frame):
                 font=FONTS['body'],
                 bg=COLORS['background'],
                 fg=COLORS['text_primary'],
-                selectcolor=COLORS['background'],
+                selectcolor=COLORS['primary'],
                 activebackground=COLORS['background'],
                 indicatoron=0,
                 width=12,
@@ -1016,8 +1027,31 @@ class AdminDashboard(tk.Frame):
             )
             btn.pack(side='left', padx=(0, SPACING // 2))
         
+        # Error label for validation messages
+        error_label = tk.Label(
+            form_frame,
+            text="",
+            font=FONTS['small'],
+            bg=COLORS['background'],
+            fg=COLORS['danger']
+        )
+        error_label.pack(anchor='w', pady=(SPACING, 0))
+        
         def confirm():
-            result[0] = (toss_winner_var.get(), decision_var.get())
+            # VALIDATION: Both selections are MANDATORY
+            winner = toss_winner_var.get()
+            decision = decision_var.get()
+            
+            if not winner:
+                error_label.config(text="Please select who won the toss")
+                return
+            
+            if not decision:
+                error_label.config(text="Please choose bat or bowl")
+                return
+            
+            # Both selections made - proceed
+            result[0] = (winner, decision)
             dialog.destroy()
         
         def cancel():

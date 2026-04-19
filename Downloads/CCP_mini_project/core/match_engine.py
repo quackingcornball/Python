@@ -187,6 +187,11 @@ class MatchEngine:
         """
         Start a match. Returns (match, error_message).
         If error_message is not empty, match was not started.
+        
+        TOSS HANDLING:
+        - Checks both match["toss"] (new format) and match["toss_winner"]/["toss_decision"] (legacy)
+        - If toss winner chose "bat": batting_team = toss_winner
+        - If toss winner chose "bowl": bowling_team = toss_winner
         """
         if match["status"] != MatchEngine.STATUS_NOT_STARTED:
             return match, "Match has already started"
@@ -196,26 +201,48 @@ class MatchEngine:
         if not can_start:
             return match, error
         
+        # Get toss info - support both new and legacy format
+        toss_winner = None
+        toss_decision = None
+        
+        # Check new format first: match["toss"] = {"winner": ..., "decision": ...}
+        if match.get("toss"):
+            toss_winner = match["toss"].get("winner")
+            toss_decision = match["toss"].get("decision")
+        
+        # Fall back to legacy format
+        if not toss_winner:
+            toss_winner = match.get("toss_winner")
+        if not toss_decision:
+            toss_decision = match.get("toss_decision")
+        
+        # MANDATORY: Toss must be set before starting
+        if not toss_winner or not toss_decision:
+            return match, "Toss winner and decision must be set before starting the match"
+        
         match["status"] = MatchEngine.STATUS_LIVE
         
-        # Determine batting team based on toss
+        # Determine batting/bowling teams based on toss decision
         teams = match["teams"]
-        first_batting = teams[0]  # Default
-        first_bowling = teams[1]
         
-        if match.get("toss_winner") and match.get("toss_decision"):
-            if match["toss_decision"] == "bat":
-                first_batting = match["toss_winner"]
-                first_bowling = teams[1] if match["toss_winner"] == teams[0] else teams[0]
-            else:
-                first_bowling = match["toss_winner"]
-                first_batting = teams[1] if match["toss_winner"] == teams[0] else teams[0]
+        if toss_decision == "bat":
+            # Toss winner bats first
+            first_batting = toss_winner
+            first_bowling = teams[1] if toss_winner == teams[0] else teams[0]
+        else:
+            # Toss winner bowls first (toss_decision == "bowl")
+            first_bowling = toss_winner
+            first_batting = teams[1] if toss_winner == teams[0] else teams[0]
         
         # Get batting order for first batting team
         batting_order = match.get("batting_orders", {}).get(first_batting, [])
         
         # Create first innings with batting order
         first_innings = MatchEngine.create_innings(first_batting, first_bowling, batting_order)
+        
+        # Store current_team in innings for easy access
+        first_innings["current_team"] = first_batting
+        
         match["innings"].append(first_innings)
         match["current_innings"] = 0
         match["last_updated"] = get_current_timestamp()
