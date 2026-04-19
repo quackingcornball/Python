@@ -426,21 +426,20 @@ class MatchView(tk.Frame):
             btn.pack(side='left', padx=(0, 6))
         
         # ===== EXTRAS SECTION =====
-        # Now uses popup system for Wide, No Ball, Bye, Leg Bye
         extras_label_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
         extras_label_frame.pack(fill='x', pady=(0, 4))
         tk.Label(
             extras_label_frame,
-            text="Extras (click to enter runs)",
+            text="Extras",
             font=FONTS['subheading'],
             bg=COLORS['card_bg'],
             fg=COLORS['text_primary']
         ).pack(anchor='w')
         
+        # Row 1: Basic extras
         extras_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
-        extras_frame.pack(fill='x', pady=(0, SPACING))
+        extras_frame.pack(fill='x', pady=(0, SPACING // 2))
         
-        # Popup-based extra buttons
         extra_buttons = [
             ("Wide", "WD"),
             ("No Ball", "NB"),
@@ -452,13 +451,42 @@ class MatchView(tk.Frame):
                 extras_frame,
                 text=label,
                 variant='warning',
-                command=lambda c=code: self._show_extra_popup(c),
-                width=8
+                command=lambda c=code: self._record_extra(c),
+                width=7
+            )
+            btn.pack(side='left', padx=(0, 6))
+        
+        # Row 2: Wide + Runs combinations
+        wide_runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        wide_runs_frame.pack(fill='x', pady=(0, SPACING // 2))
+        
+        wide_combos = [("Wide +1", "WD", 1), ("Wide +2", "WD", 2), ("Wide +4", "WD", 4)]
+        for label, extra_type, extra_runs in wide_combos:
+            btn = StyledButton(
+                wide_runs_frame,
+                text=label,
+                variant='warning',
+                command=lambda e=extra_type, r=extra_runs: self._record_extra_with_runs(e, r),
+                width=7
+            )
+            btn.pack(side='left', padx=(0, 6))
+        
+        # Row 3: No Ball + Runs combinations
+        nb_runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        nb_runs_frame.pack(fill='x', pady=(0, SPACING))
+        
+        nb_combos = [("NB +1", "NB", 1), ("NB +4", "NB", 4), ("NB +6", "NB", 6)]
+        for label, extra_type, extra_runs in nb_combos:
+            btn = StyledButton(
+                nb_runs_frame,
+                text=label,
+                variant='warning',
+                command=lambda e=extra_type, r=extra_runs: self._record_extra_with_runs(e, r),
+                width=6
             )
             btn.pack(side='left', padx=(0, 6))
         
         # ===== WICKET SECTION =====
-        # Single OUT! button with popup for dismissal type
         wicket_label_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
         wicket_label_frame.pack(fill='x', pady=(0, 4))
         tk.Label(
@@ -476,10 +504,21 @@ class MatchView(tk.Frame):
             wicket_frame,
             text="OUT!",
             variant='danger',
-            command=self._show_wicket_popup,
-            width=10
+            command=lambda: self._record_wicket_with_runs(0)
         )
         wicket_btn.pack(side='left', padx=(0, 6))
+        
+        # Run out options
+        wicket_combos = [("Run Out +1", 1, False), ("Run Out +2", 2, False), ("Non-Striker Out", 0, True)]
+        for label, runs, ns_out in wicket_combos:
+            btn = StyledButton(
+                wicket_frame,
+                text=label,
+                variant='danger',
+                command=lambda r=runs, ns=ns_out: self._record_wicket_with_runs(r, ns),
+                width=11
+            )
+            btn.pack(side='left', padx=(0, 6))
         
         # ===== ACTION BUTTONS =====
         actions_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
@@ -642,15 +681,13 @@ class MatchView(tk.Frame):
             self.insight_labels['projected'].configure(text="")
             self.insight_labels['remaining'].configure(text="")
         
-        # Update ball timeline with proper cricket notation
+        # Update ball timeline
         self.ball_timeline.clear()
         for ball in innings.get('balls', []):
             self.ball_timeline.add_ball(
                 runs=ball.get('runs', 0),
                 is_wicket=ball.get('is_wicket', False),
-                extra_type=ball.get('extra_type'),
-                extra_runs=ball.get('extras', 0),
-                dismissal_type=ball.get('dismissal')
+                extra_type=ball.get('extra_type')
             )
         
         # Update batting table
@@ -824,14 +861,8 @@ class MatchView(tk.Frame):
         )
         self._save_and_refresh()
     
-    def _show_extra_popup(self, extra_type: str):
-        """Show popup dialog for extras with runs input
-        
-        WIDE: total_runs = 1 (penalty) + runs_entered, ball does NOT count
-        NO BALL: total_runs = 1 (penalty) + runs_entered, ball does NOT count
-        BYE: total_runs = runs_entered, ball DOES count
-        LEG BYE: total_runs = runs_entered, ball DOES count
-        """
+    def _record_extra(self, extra_type: str):
+        """Record an extra"""
         if not self.match:
             return
         
@@ -842,273 +873,71 @@ class MatchView(tk.Frame):
             messagebox.showwarning("Warning", "Please select a bowler first.")
             return
         
-        extra_labels = {
+        extra_label = {
             'WD': 'Wide',
             'NB': 'No Ball',
             'BYE': 'Bye',
             'LB': 'Leg Bye'
-        }
-        extra_label = extra_labels.get(extra_type, extra_type)
+        }.get(extra_type, extra_type)
         
-        # Create popup dialog
-        dialog = tk.Toplevel(self)
-        dialog.title(f"Record {extra_label}")
-        dialog.geometry("300x200")
-        dialog.configure(bg=COLORS['background'])
-        dialog.transient(self)
-        dialog.grab_set()
-        
-        # Center dialog
-        dialog.update_idletasks()
-        x = self.winfo_rootx() + (self.winfo_width() // 2) - 150
-        y = self.winfo_rooty() + (self.winfo_height() // 2) - 100
-        dialog.geometry(f"+{x}+{y}")
-        
-        form_frame = tk.Frame(dialog, bg=COLORS['background'])
-        form_frame.pack(fill='both', expand=True, padx=PADDING, pady=PADDING)
-        
-        # Explanation based on extra type
-        if extra_type == 'WD':
-            explanation = "Wide: 1 penalty run + additional runs\nBall does NOT count"
-        elif extra_type == 'NB':
-            explanation = "No Ball: 1 penalty run + runs scored\nBall does NOT count (FREE HIT next)"
-        elif extra_type == 'BYE':
-            explanation = "Bye: Runs scored without bat contact\nBall DOES count"
-        else:  # LB
-            explanation = "Leg Bye: Runs off batsman's body\nBall DOES count"
-        
-        tk.Label(
-            form_frame,
-            text=explanation,
-            font=FONTS['small'],
-            bg=COLORS['background'],
-            fg=COLORS['text_secondary'],
-            justify='left'
-        ).pack(anchor='w', pady=(0, SPACING))
-        
-        # Runs input
-        runs_frame = tk.Frame(form_frame, bg=COLORS['background'])
-        runs_frame.pack(fill='x', pady=(0, SPACING))
-        
-        tk.Label(
-            runs_frame,
-            text="Runs scored:",
-            font=FONTS['body'],
-            bg=COLORS['background'],
-            fg=COLORS['text_primary'],
-            width=12,
-            anchor='w'
-        ).pack(side='left')
-        
-        runs_var = tk.StringVar(value="0")
-        runs_entry = tk.Entry(runs_frame, textvariable=runs_var, font=FONTS['body'], width=6)
-        runs_entry.pack(side='left')
-        runs_entry.focus_set()
-        runs_entry.select_range(0, tk.END)
-        
-        def confirm():
-            try:
-                runs = int(runs_var.get())
-                if runs < 0:
-                    messagebox.showerror("Error", "Runs cannot be negative")
-                    return
-                
-                self.match = MatchEngine.record_ball(
-                    self.match,
-                    runs=0,  # Batsman runs are handled in extras
-                    extra_type=extra_type,
-                    extra_runs=runs
-                )
-                self._save_and_refresh()
-                dialog.destroy()
-            except ValueError:
-                messagebox.showerror("Error", "Please enter a valid number")
-        
-        # Buttons
-        btn_frame = tk.Frame(form_frame, bg=COLORS['background'])
-        btn_frame.pack(fill='x', pady=(SPACING, 0))
-        
-        StyledButton(btn_frame, text="Cancel", variant='secondary', command=dialog.destroy).pack(side='left')
-        StyledButton(btn_frame, text="Record", variant='primary', command=confirm).pack(side='right')
-        
-        # Bind Enter key
-        dialog.bind('<Return>', lambda e: confirm())
-        
-        dialog.wait_window()
+        result = simpledialog.askinteger(
+            f"{extra_label}",
+            f"Runs for {extra_label}:",
+            initialvalue=1,
+            minvalue=1,
+            maxvalue=6
+        )
+        if result is not None:
+            self.match = MatchEngine.record_ball(
+                self.match,
+                extra_type=extra_type,
+                extra_runs=result
+            )
+            self._save_and_refresh()
     
-    def _show_wicket_popup(self):
-        """Show popup dialog for wickets with dismissal type and run out options
-        
-        Dismissal types: Bowled, Caught, LBW, Run Out, Stumped, Other
-        For Run Out: asks for runs scored and who is out (striker/non-striker)
-        """
-        if not self.match or not self._validate_players():
+    def _record_extra_with_runs(self, extra_type: str, extra_runs: int):
+        """Record an extra with specified runs"""
+        if not self.match:
             return
         
         innings = self.match['innings'][self.match['current_innings']]
-        striker = MatchEngine.get_current_batsman(innings, on_strike=True)
-        non_striker = MatchEngine.get_current_batsman(innings, on_strike=False)
+        bowler = MatchEngine.get_current_bowler(innings)
         
-        # Create popup dialog
-        dialog = tk.Toplevel(self)
-        dialog.title("Record Wicket")
-        dialog.geometry("350x320")
-        dialog.configure(bg=COLORS['background'])
-        dialog.transient(self)
-        dialog.grab_set()
+        if not bowler:
+            messagebox.showwarning("Warning", "Please select a bowler first.")
+            return
         
-        # Center dialog
-        dialog.update_idletasks()
-        x = self.winfo_rootx() + (self.winfo_width() // 2) - 175
-        y = self.winfo_rooty() + (self.winfo_height() // 2) - 160
-        dialog.geometry(f"+{x}+{y}")
+        self.match = MatchEngine.record_ball(
+            self.match,
+            extra_type=extra_type,
+            extra_runs=extra_runs
+        )
+        self._save_and_refresh()
+    
+    def _record_wicket_with_runs(self, runs: int, non_striker_out: bool = False):
+        """Record a wicket"""
+        if not self.match or not self._validate_players():
+            return
         
-        form_frame = tk.Frame(dialog, bg=COLORS['background'])
-        form_frame.pack(fill='both', expand=True, padx=PADDING, pady=PADDING)
+        dismissal_types = ['Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit Wicket']
         
-        # Dismissal type selection
-        tk.Label(
-            form_frame,
-            text="Dismissal Type:",
-            font=FONTS['subheading'],
-            bg=COLORS['background'],
-            fg=COLORS['text_primary']
-        ).pack(anchor='w', pady=(0, SPACING // 2))
+        default_dismissal = 'Run Out' if runs > 0 or non_striker_out else 'Bowled'
         
-        dismissal_var = tk.StringVar(value="Bowled")
-        dismissal_types = ['Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Other']
+        dismissal = simpledialog.askstring(
+            "Wicket",
+            f"Dismissal type ({', '.join(dismissal_types)}):",
+            initialvalue=default_dismissal
+        )
         
-        dismissal_frame = tk.Frame(form_frame, bg=COLORS['background'])
-        dismissal_frame.pack(fill='x', pady=(0, SPACING))
-        
-        for dtype in dismissal_types:
-            rb = tk.Radiobutton(
-                dismissal_frame,
-                text=dtype,
-                variable=dismissal_var,
-                value=dtype,
-                font=FONTS['body'],
-                bg=COLORS['background'],
-                fg=COLORS['text_primary'],
-                selectcolor=COLORS['background'],
-                activebackground=COLORS['background'],
-                command=lambda: update_run_out_options()
+        if dismissal:
+            self.match = MatchEngine.record_ball(
+                self.match,
+                runs=runs,
+                is_wicket=True,
+                dismissal_type=dismissal,
+                non_striker_out=non_striker_out
             )
-            rb.pack(side='left', padx=(0, SPACING // 2))
-        
-        # Run Out specific options (initially hidden)
-        run_out_frame = tk.Frame(form_frame, bg=COLORS['background'])
-        
-        # Runs scored for run out
-        runs_frame = tk.Frame(run_out_frame, bg=COLORS['background'])
-        runs_frame.pack(fill='x', pady=(0, SPACING // 2))
-        
-        tk.Label(
-            runs_frame,
-            text="Runs scored:",
-            font=FONTS['body'],
-            bg=COLORS['background'],
-            fg=COLORS['text_primary'],
-            width=12,
-            anchor='w'
-        ).pack(side='left')
-        
-        runs_var = tk.StringVar(value="0")
-        runs_entry = tk.Entry(runs_frame, textvariable=runs_var, font=FONTS['body'], width=6)
-        runs_entry.pack(side='left')
-        
-        # Who is out
-        who_out_frame = tk.Frame(run_out_frame, bg=COLORS['background'])
-        who_out_frame.pack(fill='x', pady=(0, SPACING // 2))
-        
-        tk.Label(
-            who_out_frame,
-            text="Who is out?",
-            font=FONTS['body'],
-            bg=COLORS['background'],
-            fg=COLORS['text_primary'],
-            width=12,
-            anchor='w'
-        ).pack(side='left')
-        
-        who_out_var = tk.StringVar(value="striker")
-        
-        striker_name = striker['name'] if striker else "Striker"
-        non_striker_name = non_striker['name'] if non_striker else "Non-Striker"
-        
-        tk.Radiobutton(
-            who_out_frame,
-            text=f"Striker ({striker_name})",
-            variable=who_out_var,
-            value="striker",
-            font=FONTS['body'],
-            bg=COLORS['background'],
-            fg=COLORS['text_primary'],
-            selectcolor=COLORS['background'],
-            activebackground=COLORS['background']
-        ).pack(side='left')
-        
-        tk.Radiobutton(
-            who_out_frame,
-            text=f"Non-Striker ({non_striker_name})",
-            variable=who_out_var,
-            value="non_striker",
-            font=FONTS['body'],
-            bg=COLORS['background'],
-            fg=COLORS['text_primary'],
-            selectcolor=COLORS['background'],
-            activebackground=COLORS['background']
-        ).pack(side='left')
-        
-        def update_run_out_options():
-            if dismissal_var.get() == "Run Out":
-                run_out_frame.pack(fill='x', pady=(0, SPACING))
-            else:
-                run_out_frame.pack_forget()
-        
-        def confirm():
-            dismissal = dismissal_var.get()
-            
-            if dismissal == "Run Out":
-                try:
-                    runs = int(runs_var.get())
-                    if runs < 0:
-                        messagebox.showerror("Error", "Runs cannot be negative")
-                        return
-                    
-                    non_striker_out = (who_out_var.get() == "non_striker")
-                    
-                    self.match = MatchEngine.record_ball(
-                        self.match,
-                        runs=runs,
-                        is_wicket=True,
-                        dismissal_type="Run Out",
-                        non_striker_out=non_striker_out
-                    )
-                except ValueError:
-                    messagebox.showerror("Error", "Please enter a valid number for runs")
-                    return
-            else:
-                # Non-run-out dismissals: no runs, striker is out
-                self.match = MatchEngine.record_ball(
-                    self.match,
-                    runs=0,
-                    is_wicket=True,
-                    dismissal_type=dismissal,
-                    non_striker_out=False
-                )
-            
             self._save_and_refresh()
-            dialog.destroy()
-        
-        # Buttons
-        btn_frame = tk.Frame(form_frame, bg=COLORS['background'])
-        btn_frame.pack(fill='x', pady=(SPACING, 0), side='bottom')
-        
-        StyledButton(btn_frame, text="Cancel", variant='secondary', command=dialog.destroy).pack(side='left')
-        StyledButton(btn_frame, text="Record OUT", variant='danger', command=confirm).pack(side='right')
-        
-        dialog.wait_window()
     
     def _undo_ball(self):
         """Undo the last ball"""

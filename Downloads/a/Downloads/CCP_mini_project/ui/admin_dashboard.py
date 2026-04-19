@@ -1,6 +1,7 @@
 """
 Admin Dashboard - Match creation and management with batting order support
 FIXED: Vertical stacking layout, max 11 players, no match reset on roster interaction
+FIXED: Proper toss popup, match starts immediately after toss
 """
 
 import tkinter as tk
@@ -13,6 +14,278 @@ from .components import StyledButton, CardFrame, StatusBadge, ScrollableFrame
 
 # Maximum players per team
 MAX_PLAYERS_PER_TEAM = 11
+
+
+class TossDialog(tk.Toplevel):
+    """
+    Toss popup dialog with two steps:
+    1. Select toss winner
+    2. Select decision (bat/bowl)
+    Match starts automatically after toss is completed.
+    """
+    
+    def __init__(self, parent, team_a: str, team_b: str):
+        super().__init__(parent)
+        
+        self.team_a = team_a
+        self.team_b = team_b
+        self.result = None  # Will be {"winner": team_name, "decision": "bat" or "bowl"}
+        
+        self.title("Toss")
+        
+        # Larger window size to ensure all content is visible
+        window_width = 500
+        window_height = 480
+        
+        self.geometry(f"{window_width}x{window_height}")
+        self.minsize(window_width, window_height)  # Set minimum size
+        self.configure(bg=COLORS['background'])
+        self.transient(parent)
+        self.grab_set()
+        self.resizable(True, True)  # Allow resizing if needed
+        
+        # Center the dialog on screen
+        self.update_idletasks()
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = (screen_width // 2) - (window_width // 2)
+        y = (screen_height // 2) - (window_height // 2)
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        
+        # State variables
+        self.toss_winner = tk.StringVar(value="")
+        self.toss_decision = tk.StringVar(value="")
+        
+        self._create_ui()
+        
+        # Handle window close
+        self.protocol("WM_DELETE_WINDOW", self._on_cancel)
+        
+        self.wait_window()
+    
+    def _create_ui(self):
+        """Create the toss dialog UI with vertical layout"""
+        main_frame = tk.Frame(self, bg=COLORS['background'], padx=30, pady=30)
+        main_frame.pack(fill='both', expand=True)
+        
+        # Title
+        title_label = tk.Label(
+            main_frame,
+            text="Toss",
+            font=FONTS['heading'],
+            bg=COLORS['background'],
+            fg=COLORS['text_primary']
+        )
+        title_label.pack(pady=(0, 20))
+        
+        # Step 1: Select toss winner
+        step1_label = tk.Label(
+            main_frame,
+            text="Step 1: Who won the toss?",
+            font=FONTS['subheading'],
+            bg=COLORS['background'],
+            fg=COLORS['text_primary']
+        )
+        step1_label.pack(anchor='w', pady=(0, 10))
+        
+        winner_btn_frame = tk.Frame(main_frame, bg=COLORS['background'])
+        winner_btn_frame.pack(fill='x', pady=(0, 25))
+        
+        self.team_a_btn = tk.Button(
+            winner_btn_frame,
+            text=self.team_a,
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_primary'],
+            relief='solid',
+            bd=1,
+            padx=20,
+            pady=12,
+            cursor='hand2',
+            command=lambda: self._select_winner(self.team_a)
+        )
+        self.team_a_btn.pack(side='left', expand=True, fill='x', padx=(0, 10))
+        
+        self.team_b_btn = tk.Button(
+            winner_btn_frame,
+            text=self.team_b,
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_primary'],
+            relief='solid',
+            bd=1,
+            padx=20,
+            pady=12,
+            cursor='hand2',
+            command=lambda: self._select_winner(self.team_b)
+        )
+        self.team_b_btn.pack(side='left', expand=True, fill='x', padx=(10, 0))
+        
+        # Step 2: Select decision
+        step2_label = tk.Label(
+            main_frame,
+            text="Step 2: Elected to...",
+            font=FONTS['subheading'],
+            bg=COLORS['background'],
+            fg=COLORS['text_primary']
+        )
+        step2_label.pack(anchor='w', pady=(0, 10))
+        
+        decision_btn_frame = tk.Frame(main_frame, bg=COLORS['background'])
+        decision_btn_frame.pack(fill='x', pady=(0, 25))
+        
+        self.bat_btn = tk.Button(
+            decision_btn_frame,
+            text="Bat",
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_secondary'],
+            relief='solid',
+            bd=1,
+            padx=20,
+            pady=12,
+            cursor='hand2',
+            state='disabled',
+            command=lambda: self._select_decision("bat")
+        )
+        self.bat_btn.pack(side='left', expand=True, fill='x', padx=(0, 10))
+        
+        self.bowl_btn = tk.Button(
+            decision_btn_frame,
+            text="Bowl",
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_secondary'],
+            relief='solid',
+            bd=1,
+            padx=20,
+            pady=12,
+            cursor='hand2',
+            state='disabled',
+            command=lambda: self._select_decision("bowl")
+        )
+        self.bowl_btn.pack(side='left', expand=True, fill='x', padx=(10, 0))
+        
+        # Status display
+        self.status_label = tk.Label(
+            main_frame,
+            text="Please select the toss winner",
+            font=FONTS['body'],
+            bg=COLORS['background'],
+            fg=COLORS['text_secondary'],
+            wraplength=400
+        )
+        self.status_label.pack(pady=(10, 25))
+        
+        # Action buttons at bottom
+        btn_frame = tk.Frame(main_frame, bg=COLORS['background'])
+        btn_frame.pack(fill='x', side='bottom')
+        
+        cancel_btn = tk.Button(
+            btn_frame,
+            text="Cancel",
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_primary'],
+            relief='solid',
+            bd=1,
+            padx=25,
+            pady=10,
+            cursor='hand2',
+            command=self._on_cancel
+        )
+        cancel_btn.pack(side='left')
+        
+        self.start_btn = tk.Button(
+            btn_frame,
+            text="Start Match",
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_secondary'],
+            relief='solid',
+            bd=1,
+            padx=25,
+            pady=10,
+            cursor='hand2',
+            state='disabled',
+            command=self._on_start
+        )
+        self.start_btn.pack(side='right')
+    
+    def _select_winner(self, team: str):
+        """Handle toss winner selection"""
+        self.toss_winner.set(team)
+        
+        # Update button styles - highlight selected team
+        if team == self.team_a:
+            self.team_a_btn.configure(bg=COLORS['primary'], fg='white', state='normal')
+            self.team_b_btn.configure(bg=COLORS['card_bg'], fg=COLORS['text_primary'], state='normal')
+        else:
+            self.team_b_btn.configure(bg=COLORS['primary'], fg='white', state='normal')
+            self.team_a_btn.configure(bg=COLORS['card_bg'], fg=COLORS['text_primary'], state='normal')
+        
+        # Enable decision buttons
+        self.bat_btn.configure(state='normal', fg=COLORS['text_primary'])
+        self.bowl_btn.configure(state='normal', fg=COLORS['text_primary'])
+        
+        # Reset decision button styles if re-selecting winner
+        self.bat_btn.configure(bg=COLORS['card_bg'])
+        self.bowl_btn.configure(bg=COLORS['card_bg'])
+        self.toss_decision.set("")
+        
+        # Update status
+        self.status_label.configure(text=f"{team} won the toss. Now select Bat or Bowl.")
+        
+        # Disable start button until decision is made
+        self.start_btn.configure(state='disabled')
+    
+    def _select_decision(self, decision: str):
+        """Handle toss decision selection"""
+        self.toss_decision.set(decision)
+        
+        winner = self.toss_winner.get()
+        other_team = self.team_b if winner == self.team_a else self.team_a
+        
+        # Update button styles - highlight selected decision (green for selected)
+        if decision == "bat":
+            self.bat_btn.configure(bg=COLORS['runs'], fg='white')
+            self.bowl_btn.configure(bg=COLORS['card_bg'], fg=COLORS['text_primary'])
+            self.status_label.configure(
+                text=f"{winner} won toss and elected to BAT.\n{other_team} will bowl first."
+            )
+        else:
+            self.bowl_btn.configure(bg=COLORS['runs'], fg='white')
+            self.bat_btn.configure(bg=COLORS['card_bg'], fg=COLORS['text_primary'])
+            self.status_label.configure(
+                text=f"{winner} won toss and elected to BOWL.\n{other_team} will bat first."
+            )
+        
+        # Enable start button with green background
+        self.start_btn.configure(state='normal', bg=COLORS['runs'], fg='white')
+    
+    def _on_start(self):
+        """Handle start match button"""
+        winner = self.toss_winner.get()
+        decision = self.toss_decision.get()
+        
+        if not winner:
+            messagebox.showwarning("Incomplete", "Please select the toss winner.", parent=self)
+            return
+        
+        if not decision:
+            messagebox.showwarning("Incomplete", "Please choose bat or bowl.", parent=self)
+            return
+        
+        self.result = {
+            "winner": winner,
+            "decision": decision
+        }
+        self.destroy()
+    
+    def _on_cancel(self):
+        """Handle cancel/close"""
+        self.result = None
+        self.destroy()
 
 
 class AdminDashboard(tk.Frame):
@@ -188,25 +461,10 @@ class AdminDashboard(tk.Frame):
         )
         self.format_combo.pack(side='left')
         
-        # Note: Toss is now selected when "Start Match" is clicked
-        # This follows proper cricket flow - toss happens right before the match
-        toss_note_frame = tk.Frame(form, bg=COLORS['card_bg'])
-        toss_note_frame.pack(fill='x', pady=(0, SPACING + 4))
-        
-        tk.Label(
-            toss_note_frame,
-            text="Note: Toss will be selected when starting the match",
-            font=FONTS['small'],
-            bg=COLORS['card_bg'],
-            fg=COLORS['text_secondary']
-        ).pack(anchor='w')
-        
-        # Hidden variables for toss (populated by popup when starting)
+        # Note: Toss is handled via popup when clicking "Start Match"
+        # Hidden variables to store toss result after popup
         self.toss_var = tk.StringVar()
         self.decision_var = tk.StringVar(value="bat")
-        # Team name change traces for roster titles
-        self.team_a_var.trace_add('write', lambda *args: self._update_roster_titles())
-        self.team_b_var.trace_add('write', lambda *args: self._update_roster_titles())
         
         # Action buttons
         btn_frame = tk.Frame(form, bg=COLORS['card_bg'])
@@ -248,7 +506,13 @@ class AdminDashboard(tk.Frame):
         self._update_button_states()
     
     def _create_team_roster_section(self, parent, team_id: str):
-        """Create roster section for a team - FULL WIDTH VERTICAL"""
+        """
+        Create roster section for a team - FULL WIDTH VERTICAL.
+        
+        IMPORTANT: Roster listboxes do NOT have <<ListboxSelect>> bindings
+        that would cause navigation or match reloading. Clicking on roster
+        items only selects them for add/remove operations.
+        """
         # Store reference for title updates
         roster_card = CardFrame(parent, title=f"Team {team_id} Roster")
         roster_card.pack(fill='x', pady=(0, SPACING))
@@ -320,7 +584,13 @@ class AdminDashboard(tk.Frame):
         remove_btn.pack(side='left')
     
     def _create_team_batting_order_section(self, parent, team_id: str):
-        """Create batting order section for a team - FULL WIDTH VERTICAL"""
+        """
+        Create batting order section for a team - FULL WIDTH VERTICAL.
+        
+        IMPORTANT: Batting order listboxes do NOT have <<ListboxSelect>> bindings
+        that would cause navigation or match reloading. Clicking on batting order
+        items only selects them for move/remove operations.
+        """
         order_card = CardFrame(parent, title=f"Team {team_id} Batting Order")
         order_card.pack(fill='x', pady=(0, SPACING))
         
@@ -397,7 +667,6 @@ class AdminDashboard(tk.Frame):
         )
         auto_order_btn.pack(side='right')
     
-    
     def _update_roster_titles(self):
         """Update roster panel titles with team names"""
         team_a_name = self.team_a_var.get() or "Team A"
@@ -463,21 +732,29 @@ class AdminDashboard(tk.Frame):
             self.match_listbox.selection_set(new_selection_idx)
     
     def _on_match_select(self, event):
-        """Handle match selection from list - DOES NOT reinitialize match"""
+        """
+        Handle match selection from list.
+        IMPORTANT: Only triggers when a DIFFERENT match is selected.
+        Does NOT reinitialize or reload match data unnecessarily.
+        """
         selection = self.match_listbox.curselection()
         if selection:
             idx = selection[0]
+            
+            # Safety check for index bounds
+            if idx >= len(self.match_ids):
+                return
+            
             new_match_id = self.match_ids[idx]
             
-            # Only reload if selecting a different match
+            # Only reload if selecting a DIFFERENT match
+            # This prevents unnecessary reloads when clicking the same selection
             if new_match_id != self.selected_match_id:
                 self.selected_match_id = new_match_id
                 self._load_match_to_form(self.selected_match_id)
-        else:
-            self.selected_match_id = None
-            self._reset_form()
-        
-        self._update_button_states()
+                self._update_button_states()
+        # Note: We don't reset form on empty selection during normal operation
+        # This preserves state when focus changes or when clicking between widgets
     
     def _load_match_to_form(self, match_id: str):
         """Load match data into the form - IN-PLACE, no reinitialization"""
@@ -489,7 +766,8 @@ class AdminDashboard(tk.Frame):
         self.team_a_var.set(teams[0] if len(teams) > 0 else '')
         self.team_b_var.set(teams[1] if len(teams) > 1 else '')
         self.format_var.set(match.get('format', 'T20'))
-        # Toss is now set when starting the match, not during creation
+        self.toss_var.set(match.get('toss_winner', ''))
+        self.decision_var.set(match.get('toss_decision', 'bat'))
         
         # Load rosters and batting orders
         self._load_rosters_and_orders(match)
@@ -676,10 +954,7 @@ class AdminDashboard(tk.Frame):
             messagebox.showinfo("Info", f"{player_name} is already in batting order.")
     
     def _remove_from_batting_order(self, team: str):
-        """Remove player from batting order
-        
-        IMPORTANT: During a live match, only allow removal of players who have NOT yet batted.
-        """
+        """Remove player from batting order"""
         if not self.selected_match_id:
             return
         
@@ -699,25 +974,6 @@ class AdminDashboard(tk.Frame):
         teams = match.get('teams', ['Team A', 'Team B'])
         team_name = teams[0] if team == 'A' else teams[1]
         
-        # Check if match is live and this team is currently batting
-        if match.get('status') in ['Live', 'Super Over']:
-            innings_list = match.get('innings', [])
-            current_idx = match.get('current_innings', 0)
-            
-            if innings_list and current_idx < len(innings_list):
-                current_innings = innings_list[current_idx]
-                
-                if current_innings.get('batting_team') == team_name:
-                    batting_state = current_innings.get('current_batting_state', {})
-                    next_batsman_idx = batting_state.get('next_batsman_index', 2)
-                    
-                    if idx < next_batsman_idx:
-                        messagebox.showwarning(
-                            "Cannot Remove",
-                            f"Cannot remove players who have already batted or are currently at the crease."
-                        )
-                        return
-        
         if 'batting_orders' in match and team_name in match['batting_orders']:
             if idx < len(match['batting_orders'][team_name]):
                 match['batting_orders'][team_name].pop(idx)
@@ -731,11 +987,7 @@ class AdminDashboard(tk.Frame):
                 self.data_manager.save_match(self.selected_match_id, match)
     
     def _move_in_batting_order(self, team: str, direction: int):
-        """Move player up or down in batting order
-        
-        IMPORTANT: During a live match, only allow editing of players who have NOT yet batted.
-        Players who are currently batting (striker/non-striker) or have already batted cannot be moved.
-        """
+        """Move player up or down in batting order"""
         if not self.selected_match_id:
             return
         
@@ -754,29 +1006,6 @@ class AdminDashboard(tk.Frame):
         
         teams = match.get('teams', ['Team A', 'Team B'])
         team_name = teams[0] if team == 'A' else teams[1]
-        
-        # Check if match is live and this team is currently batting
-        if match.get('status') in ['Live', 'Super Over']:
-            innings_list = match.get('innings', [])
-            current_idx = match.get('current_innings', 0)
-            
-            if innings_list and current_idx < len(innings_list):
-                current_innings = innings_list[current_idx]
-                
-                # Only restrict if this team is currently batting
-                if current_innings.get('batting_team') == team_name:
-                    batting_state = current_innings.get('current_batting_state', {})
-                    next_batsman_idx = batting_state.get('next_batsman_index', 2)
-                    
-                    # Players at positions 0 to next_batsman_idx-1 have already batted or are batting
-                    # Only allow moving players at positions >= next_batsman_idx
-                    if idx < next_batsman_idx or new_idx < next_batsman_idx:
-                        messagebox.showwarning(
-                            "Cannot Move",
-                            f"Cannot move players who have already batted or are currently at the crease.\n"
-                            f"Only players at positions {next_batsman_idx + 1} and below can be reordered."
-                        )
-                        return
         
         if 'batting_orders' in match and team_name in match['batting_orders']:
             order = match['batting_orders'][team_name]
@@ -831,7 +1060,7 @@ class AdminDashboard(tk.Frame):
         messagebox.showinfo("Success", f"Batting order set to roster order for {team_name}.")
     
     def _create_match(self):
-        """Create or update a match (toss is set when starting)"""
+        """Create or update a match (toss is set via popup when starting)"""
         team_a = self.team_a_var.get().strip()
         team_b = self.team_b_var.get().strip()
         format_type = self.format_var.get()
@@ -849,7 +1078,7 @@ class AdminDashboard(tk.Frame):
                 match['format'] = format_type
                 match['total_overs'] = FORMATS[format_type]['overs']
                 match['total_innings'] = FORMATS[format_type]['innings']
-                # Toss is set when starting the match, not during creation/editing
+                # Note: toss_winner and toss_decision are set via popup when starting
                 
                 # Update roster and batting order keys if team names changed
                 if old_teams[0] != team_a and old_teams[0] in match.get('rosters', {}):
@@ -864,11 +1093,13 @@ class AdminDashboard(tk.Frame):
                 self.data_manager.save_match(self.selected_match_id, match)
                 messagebox.showinfo("Success", "Match updated successfully!")
         else:
-            # Create new match (toss is set when starting)
+            # Create new match (toss will be set via popup when starting)
             match = MatchEngine.create_match(
                 team_a=team_a,
                 team_b=team_b,
-                match_format=format_type
+                match_format=format_type,
+                toss_winner='',
+                toss_decision=''
             )
             
             self.data_manager.save_match(match['match_id'], match)
@@ -880,7 +1111,10 @@ class AdminDashboard(tk.Frame):
         self._update_button_states()
     
     def _start_match(self):
-        """Start the selected match - shows toss popup first"""
+        """
+        Start the selected match.
+        Shows toss popup first, then starts match automatically after toss completion.
+        """
         if not self.selected_match_id:
             return
         
@@ -892,30 +1126,31 @@ class AdminDashboard(tk.Frame):
             messagebox.showwarning("Error", "Only upcoming matches can be started.")
             return
         
-        # Validate match can start
+        # Validate match can start (rosters and batting orders)
         can_start, error = MatchEngine.validate_match_can_start(match)
         if not can_start:
             messagebox.showerror("Cannot Start Match", error)
             return
         
+        # Get team names
+        teams = match.get('teams', ['Team A', 'Team B'])
+        team_a = teams[0] if len(teams) > 0 else 'Team A'
+        team_b = teams[1] if len(teams) > 1 else 'Team B'
+        
         # Show toss popup
-        toss_result = self._show_toss_popup(match)
-        if toss_result is None:
-            # User cancelled
+        toss_dialog = TossDialog(self, team_a, team_b)
+        
+        # Check if toss was completed
+        if not toss_dialog.result:
+            # User cancelled toss - do not start match
             return
         
-        toss_winner, toss_decision = toss_result
+        # Update match with toss result
+        toss_result = toss_dialog.result
+        match['toss_winner'] = toss_result['winner']
+        match['toss_decision'] = toss_result['decision']
         
-        # Store toss in REQUIRED format
-        match['toss'] = {
-            'winner': toss_winner,
-            'decision': toss_decision
-        }
-        # Also store in legacy format for backward compatibility
-        match['toss_winner'] = toss_winner
-        match['toss_decision'] = toss_decision
-        
-        # Start match
+        # Start match IMMEDIATELY after toss
         match, error = MatchEngine.start_match(match)
         if error:
             messagebox.showerror("Error", error)
@@ -923,151 +1158,12 @@ class AdminDashboard(tk.Frame):
         
         self.data_manager.save_match(self.selected_match_id, match)
         
-        messagebox.showinfo("Success", f"Match started!\n\n{toss_winner} won the toss and elected to {toss_decision}.")
         self._refresh_match_list()
         self._update_button_states()
         
-        # Navigate to match editing
+        # Navigate DIRECTLY to match scoring (no confirmation dialog needed)
         if self.on_edit_match:
             self.on_edit_match(self.selected_match_id)
-    
-    def _show_toss_popup(self, match: Dict[str, Any]) -> Optional[tuple]:
-        """Show toss popup dialog with TWO mandatory steps:
-        
-        STEP 1: Select toss winner (Team A or Team B)
-        STEP 2: Select decision (Bat or Bowl)
-        
-        Returns (toss_winner, toss_decision) tuple or None if cancelled
-        The popup will NOT close until BOTH selections are made.
-        """
-        teams = match.get('teams', ['Team A', 'Team B'])
-        
-        # Create popup dialog
-        dialog = tk.Toplevel(self)
-        dialog.title("Toss")
-        dialog.geometry("380x320")
-        dialog.configure(bg=COLORS['background'])
-        dialog.transient(self)
-        dialog.grab_set()
-        
-        # Center dialog
-        dialog.update_idletasks()
-        x = self.winfo_rootx() + (self.winfo_width() // 2) - 190
-        y = self.winfo_rooty() + (self.winfo_height() // 2) - 160
-        dialog.geometry(f"+{x}+{y}")
-        
-        result = [None]  # Use list to store result in closure
-        
-        form_frame = tk.Frame(dialog, bg=COLORS['background'])
-        form_frame.pack(fill='both', expand=True, padx=PADDING, pady=PADDING)
-        
-        # STEP 1: Who won the toss?
-        tk.Label(
-            form_frame,
-            text="STEP 1: Who won the toss?",
-            font=FONTS['heading'],
-            bg=COLORS['background'],
-            fg=COLORS['text_primary']
-        ).pack(anchor='w', pady=(0, SPACING))
-        
-        # Use empty string as initial value to force explicit selection
-        toss_winner_var = tk.StringVar(value="")
-        
-        toss_winner_frame = tk.Frame(form_frame, bg=COLORS['background'])
-        toss_winner_frame.pack(fill='x', pady=(0, SPACING * 2))
-        
-        for team in teams:
-            btn = tk.Radiobutton(
-                toss_winner_frame,
-                text=team,
-                variable=toss_winner_var,
-                value=team,
-                font=FONTS['body'],
-                bg=COLORS['background'],
-                fg=COLORS['text_primary'],
-                selectcolor=COLORS['primary'],
-                activebackground=COLORS['background'],
-                indicatoron=0,
-                width=15,
-                padx=10,
-                pady=8
-            )
-            btn.pack(side='left', padx=(0, SPACING // 2))
-        
-        # STEP 2: Decision (Bat or Bowl) - MANDATORY
-        tk.Label(
-            form_frame,
-            text="STEP 2: Choose bat or bowl",
-            font=FONTS['heading'],
-            bg=COLORS['background'],
-            fg=COLORS['text_primary']
-        ).pack(anchor='w', pady=(0, SPACING))
-        
-        # Use empty string to force explicit selection
-        decision_var = tk.StringVar(value="")
-        
-        decision_frame = tk.Frame(form_frame, bg=COLORS['background'])
-        decision_frame.pack(fill='x', pady=(0, SPACING))
-        
-        for decision, label in [("bat", "Bat First"), ("bowl", "Bowl First")]:
-            btn = tk.Radiobutton(
-                decision_frame,
-                text=label,
-                variable=decision_var,
-                value=decision,
-                font=FONTS['body'],
-                bg=COLORS['background'],
-                fg=COLORS['text_primary'],
-                selectcolor=COLORS['primary'],
-                activebackground=COLORS['background'],
-                indicatoron=0,
-                width=12,
-                padx=10,
-                pady=8
-            )
-            btn.pack(side='left', padx=(0, SPACING // 2))
-        
-        # Error label for validation messages
-        error_label = tk.Label(
-            form_frame,
-            text="",
-            font=FONTS['small'],
-            bg=COLORS['background'],
-            fg=COLORS['danger']
-        )
-        error_label.pack(anchor='w', pady=(SPACING, 0))
-        
-        def confirm():
-            # VALIDATION: Both selections are MANDATORY
-            winner = toss_winner_var.get()
-            decision = decision_var.get()
-            
-            if not winner:
-                error_label.config(text="Please select who won the toss")
-                return
-            
-            if not decision:
-                error_label.config(text="Please choose bat or bowl")
-                return
-            
-            # Both selections made - proceed
-            result[0] = (winner, decision)
-            dialog.destroy()
-        
-        def cancel():
-            result[0] = None
-            dialog.destroy()
-        
-        # Buttons
-        btn_frame = tk.Frame(form_frame, bg=COLORS['background'])
-        btn_frame.pack(fill='x', pady=(SPACING, 0))
-        
-        StyledButton(btn_frame, text="Cancel", variant='secondary', command=cancel).pack(side='left')
-        StyledButton(btn_frame, text="Start Match", variant='primary', command=confirm).pack(side='right')
-        
-        dialog.wait_window()
-        
-        return result[0]
     
     def _delete_match(self):
         """Delete the selected match"""

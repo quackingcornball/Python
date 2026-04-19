@@ -75,12 +75,6 @@ class MatchEngine:
         """
         Validate that match can be started.
         Returns (can_start, error_message)
-        
-        STRICT RULES:
-        - Each team MUST have EXACTLY 11 players in roster
-        - Each team MUST have EXACTLY 11 players in batting order
-        - Batting order must only contain roster players
-        - No duplicates allowed in batting order
         """
         teams = match.get("teams", [])
         rosters = match.get("rosters", {})
@@ -90,27 +84,18 @@ class MatchEngine:
             roster = rosters.get(team, [])
             batting_order = batting_orders.get(team, [])
             
-            # Check EXACTLY 11 players in roster
-            if len(roster) != 11:
-                return False, f"{team} must have exactly 11 players in roster (currently {len(roster)})"
+            # Check minimum roster size (2 players minimum)
+            if len(roster) < 2:
+                return False, f"{team} needs at least 2 players in roster"
             
-            # Check EXACTLY 11 players in batting order
-            if len(batting_order) != 11:
-                return False, f"{team} must have exactly 11 players in batting order (currently {len(batting_order)})"
-            
-            # Check for duplicates in batting order
-            if len(batting_order) != len(set(batting_order)):
-                return False, f"{team}'s batting order contains duplicate players"
+            # Check batting order is defined
+            if len(batting_order) < 2:
+                return False, f"{team} needs batting order defined (minimum 2 players)"
             
             # Ensure batting order only contains roster players
             for player in batting_order:
                 if player not in roster:
                     return False, f"Player '{player}' in {team}'s batting order is not in roster"
-            
-            # Ensure all roster players are in batting order
-            for player in roster:
-                if player not in batting_order:
-                    return False, f"Player '{player}' from {team}'s roster is missing from batting order"
         
         return True, ""
     
@@ -187,11 +172,6 @@ class MatchEngine:
         """
         Start a match. Returns (match, error_message).
         If error_message is not empty, match was not started.
-        
-        TOSS HANDLING:
-        - Checks both match["toss"] (new format) and match["toss_winner"]/["toss_decision"] (legacy)
-        - If toss winner chose "bat": batting_team = toss_winner
-        - If toss winner chose "bowl": bowling_team = toss_winner
         """
         if match["status"] != MatchEngine.STATUS_NOT_STARTED:
             return match, "Match has already started"
@@ -201,48 +181,26 @@ class MatchEngine:
         if not can_start:
             return match, error
         
-        # Get toss info - support both new and legacy format
-        toss_winner = None
-        toss_decision = None
-        
-        # Check new format first: match["toss"] = {"winner": ..., "decision": ...}
-        if match.get("toss"):
-            toss_winner = match["toss"].get("winner")
-            toss_decision = match["toss"].get("decision")
-        
-        # Fall back to legacy format
-        if not toss_winner:
-            toss_winner = match.get("toss_winner")
-        if not toss_decision:
-            toss_decision = match.get("toss_decision")
-        
-        # MANDATORY: Toss must be set before starting
-        if not toss_winner or not toss_decision:
-            return match, "Toss winner and decision must be set before starting the match"
-        
         match["status"] = MatchEngine.STATUS_LIVE
         
-        # Determine batting/bowling teams based on toss decision
+        # Determine batting team based on toss
         teams = match["teams"]
+        first_batting = teams[0]  # Default
+        first_bowling = teams[1]
         
-        if toss_decision == "bat":
-            # Toss winner bats first
-            first_batting = toss_winner
-            first_bowling = teams[1] if toss_winner == teams[0] else teams[0]
-        else:
-            # Toss winner bowls first (toss_decision == "bowl")
-            first_bowling = toss_winner
-            first_batting = teams[1] if toss_winner == teams[0] else teams[0]
+        if match.get("toss_winner") and match.get("toss_decision"):
+            if match["toss_decision"] == "bat":
+                first_batting = match["toss_winner"]
+                first_bowling = teams[1] if match["toss_winner"] == teams[0] else teams[0]
+            else:
+                first_bowling = match["toss_winner"]
+                first_batting = teams[1] if match["toss_winner"] == teams[0] else teams[0]
         
         # Get batting order for first batting team
         batting_order = match.get("batting_orders", {}).get(first_batting, [])
         
         # Create first innings with batting order
         first_innings = MatchEngine.create_innings(first_batting, first_bowling, batting_order)
-        
-        # Store current_team in innings for easy access
-        first_innings["current_team"] = first_batting
-        
         match["innings"].append(first_innings)
         match["current_innings"] = 0
         match["last_updated"] = get_current_timestamp()
@@ -389,60 +347,32 @@ class MatchEngine:
         }
         innings["balls"].append(ball)
         
-        # Update innings totals based on proper cricket rules
-        # WIDE: 1 penalty + any additional runs (ball does NOT count)
-        # NO BALL: 1 penalty + runs scored (ball does NOT count)
-        # BYE/LEG BYE: only runs scored (ball DOES count)
-        # Normal: runs scored (ball DOES count)
-        
-        if extra_type == "WD":
-            # Wide: 1 penalty run + additional runs (e.g., wide+4 = 5 total)
-            total_runs = 1 + extra_runs
-            innings["extras"]["wides"] += total_runs
-        elif extra_type == "NB":
-            # No Ball: 1 penalty run + runs scored by batsman
-            total_runs = 1 + runs + extra_runs
-            innings["extras"]["no_balls"] += 1
-        elif extra_type == "BYE":
-            # Bye: only runs scored, no penalty
-            total_runs = extra_runs
-            innings["extras"]["byes"] += extra_runs
-        elif extra_type == "LB":
-            # Leg Bye: only runs scored, no penalty
-            total_runs = extra_runs
-            innings["extras"]["leg_byes"] += extra_runs
-        else:
-            # Normal delivery
-            total_runs = runs
-        
+        # Update innings totals
+        total_runs = runs + extra_runs
         innings["runs"] += total_runs
         
-        # Update batsman stats
-        # Wide: batsman does NOT face the ball
-        # No Ball: batsman DOES face the ball and gets runs
-        # Bye/Leg Bye: batsman faces ball but runs don't count to batsman
-        if extra_type == "WD":
-            # Wide - batsman doesn't face it
-            pass
-        elif extra_type in ["BYE", "LB"]:
-            # Byes/Leg Byes - batsman faces but doesn't score
+        # Update extras
+        if extra_type:
+            if extra_type == "WD":
+                innings["extras"]["wides"] += 1 + extra_runs
+            elif extra_type == "NB":
+                innings["extras"]["no_balls"] += 1
+                innings["runs"] += 1  # No ball is always 1 extra run
+            elif extra_type == "BYE":
+                innings["extras"]["byes"] += extra_runs if extra_runs > 0 else 1
+            elif extra_type == "LB":
+                innings["extras"]["leg_byes"] += extra_runs if extra_runs > 0 else 1
+        
+        # Update batsman (only for non-wide deliveries)
+        if extra_type != "WD":
             striker["balls"] += 1
-        elif extra_type == "NB":
-            # No Ball - batsman faces and scores runs
-            striker["balls"] += 1
-            striker["runs"] += runs + extra_runs  # Batsman gets runs off no ball
-            if runs + extra_runs == 4:
-                striker["fours"] += 1
-            elif runs + extra_runs == 6:
-                striker["sixes"] += 1
-        else:
-            # Normal delivery
-            striker["balls"] += 1
-            striker["runs"] += runs
-            if runs == 4:
-                striker["fours"] += 1
-            elif runs == 6:
-                striker["sixes"] += 1
+            # Batsman only gets runs credited for non-bye extras
+            if extra_type not in ["BYE", "LB"]:
+                striker["runs"] += runs
+                if runs == 4:
+                    striker["fours"] += 1
+                elif runs == 6:
+                    striker["sixes"] += 1
         
         # Update bowler (only for legal deliveries)
         if extra_type not in ["WD", "NB"]:
@@ -456,6 +386,7 @@ class MatchEngine:
         if is_wicket:
             innings["wickets"] += 1
             bowler["wickets"] += 1
+            print(f"[v0] Wicket! Total wickets now: {innings['wickets']}")
             
             # Determine who is out
             if non_striker_out and non_striker:
@@ -475,6 +406,7 @@ class MatchEngine:
                 max_wickets = innings.get("max_wickets", 10)
                 if innings["wickets"] < max_wickets:
                     if not MatchEngine._bring_next_batsman(innings, replace_striker=False):
+                        print(f"[v0] No more batsmen available - innings complete (via wicket)")
                         innings["is_completed"] = True
             else:
                 # Striker is out
@@ -493,6 +425,7 @@ class MatchEngine:
                 max_wickets = innings.get("max_wickets", 10)
                 if innings["wickets"] < max_wickets:
                     if not MatchEngine._bring_next_batsman(innings, replace_striker=True):
+                        print(f"[v0] No more batsmen available - innings complete (via wicket)")
                         innings["is_completed"] = True
         
         # Update overs (only for legal deliveries)
@@ -541,29 +474,38 @@ class MatchEngine:
         max_wickets = innings.get("max_wickets", 10)
         max_overs = innings.get("max_overs") or total_overs
         
+        print(f"[v0] _check_innings_completion: current_innings={match['current_innings']}, total_innings={match.get('total_innings')}, wickets={innings['wickets']}, max_wickets={max_wickets}, overs={innings['overs']}, max_overs={max_overs}, is_completed={innings['is_completed']}")
+        
         # All out
         if innings["wickets"] >= max_wickets:
+            print(f"[v0] Innings complete: all out ({innings['wickets']} >= {max_wickets})")
             innings["is_completed"] = True
         
         # Overs completed (for limited overs)
         if max_overs and innings["overs"] >= max_overs:
+            print(f"[v0] Innings complete: overs done ({innings['overs']} >= {max_overs})")
             innings["is_completed"] = True
         
         # Target achieved (2nd innings or super over)
         if match["current_innings"] > 0 and match.get("target"):
             if innings["runs"] >= match["target"]:
+                print(f"[v0] Innings complete: target achieved ({innings['runs']} >= {match['target']})")
                 innings["is_completed"] = True
                 MatchEngine._complete_match(match)
                 return
         
         # Start next innings if needed
         if innings["is_completed"]:
+            print(f"[v0] Innings is_completed=True, checking what to do next...")
             if innings.get("is_super_over"):
+                print(f"[v0] Handling super over completion")
                 # Handle super over completion
                 MatchEngine._handle_super_over_completion(match)
             elif match["current_innings"] < match["total_innings"] - 1:
+                print(f"[v0] Starting next innings ({match['current_innings']} < {match['total_innings'] - 1})")
                 MatchEngine._start_next_innings(match)
             else:
+                print(f"[v0] Both innings complete, completing match")
                 # Both innings complete
                 MatchEngine._complete_match(match)
     
@@ -572,16 +514,22 @@ class MatchEngine:
         """Start the next innings"""
         current = match["innings"][match["current_innings"]]
         
+        print(f"[v0] _start_next_innings called: current_innings={match['current_innings']}")
+        
         # Set target for chasing team
         if match["current_innings"] == 0:
             match["target"] = current["runs"] + 1
+            print(f"[v0] Target set to {match['target']}")
         
         # Swap teams
         new_batting_team = current["bowling_team"]
         new_bowling_team = current["batting_team"]
         
+        print(f"[v0] New batting team: {new_batting_team}, New bowling team: {new_bowling_team}")
+        
         # Get batting order for new batting team
         batting_order = match.get("batting_orders", {}).get(new_batting_team, [])
+        print(f"[v0] Batting order for {new_batting_team}: {batting_order}")
         
         # Create new innings
         new_innings = MatchEngine.create_innings(
@@ -592,11 +540,14 @@ class MatchEngine:
         match["innings"].append(new_innings)
         match["current_innings"] += 1
         match["status"] = MatchEngine.STATUS_LIVE
+        print(f"[v0] Second innings started! current_innings={match['current_innings']}, status={match['status']}")
     
     @staticmethod
     def _complete_match(match: Dict[str, Any]) -> None:
         """Complete the match and determine result"""
+        print(f"[v0] _complete_match called: num_innings={len(match['innings'])}")
         if len(match["innings"]) < 2:
+            print(f"[v0] _complete_match returning early - only {len(match['innings'])} innings")
             return
         
         first_innings = match["innings"][0]

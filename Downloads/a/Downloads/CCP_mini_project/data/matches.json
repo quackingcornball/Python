@@ -1,81 +1,1053 @@
 {
   "matches": {
-    "8d214b67": {
-      "match_id": "8d214b67",
+    "6b5335c7": {
+      "match_id": "6b5335c7",
       "teams": [
         "India",
-        "Pakistan"
+        "pak"
       ],
       "format": "T20",
       "total_overs": 20,
       "total_innings": 2,
-      "toss_winner": null,
-      "toss_decision": null,
-      "status": "Upcoming",
-      "current_innings": 0,
-      "innings": [],
-      "target": null,
+      "toss_winner": "India",
+      "toss_decision": "bowl",
+      "status": "Super Over",
+      "current_innings": 4,
+      "innings": [
+        {
+          "batting_team": "pak",
+          "bowling_team": "India",
+          "runs": 0,
+          "wickets": 10,
+          "overs": 1.4,
+          "balls": [
+            {
+              "over": 0,
+              "ball": 1,
+              "batsman": "sdncv",
+              "bowler": "sfgsfg",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 0,
+              "ball": 2,
+              "batsman": "fg",
+              "bowler": "sfgsfg",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 0,
+              "ball": 3,
+              "batsman": "fgs",
+              "bowler": "sfgsfg",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 0,
+              "ball": 4,
+              "batsman": "ga",
+              "bowler": "sfgsfg",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 0,
+              "ball": 5,
+              "batsman": "d",
+              "bowler": "sfgsfg",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 0,
+              "ball": 6,
+              "batsman": "g",
+              "bowler": "sfgsfg",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 1,
+              "ball": 1,
+              "batsman": "adgms",
+              "bowler": "sfgsfg",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 1,
+              "ball": 2,
+              "batsman": "dfgae",
+              "bowler": "sfgsfg",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 1,
+              "ball": 3,
+              "batsman": "fgsdf",
+              "bowler": "sfgsfg",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 1,
+              "ball": 4,
+              "batsman": "gh",
+              "bowler": "sfgsfg",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            }
+          ],
+          "batsmen": [
+            {
+              "id": "209482fe",
+              "name": "sdncv",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "4b222769",
+              "name": "adgms",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "954dced4",
+              "name": "fg",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "e0871955",
+              "name": "fgs",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "73795356",
+              "name": "ga",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "fbcba2f9",
+              "name": "d",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "66b5b2f9",
+              "name": "g",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "44028459",
+              "name": "asdga",
+              "runs": 0,
+              "balls": 0,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": false,
+              "dismissal": null,
+              "on_strike": false
+            },
+            {
+              "id": "6fbcf615",
+              "name": "dfgae",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "51128e9f",
+              "name": "fgsdf",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "c664fb50",
+              "name": "gh",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            }
+          ],
+          "bowlers": [
+            {
+              "id": "b9bad430",
+              "name": "sfgsfg",
+              "overs": 1.4,
+              "balls": 10,
+              "maidens": 0,
+              "runs": 0,
+              "wickets": 10
+            }
+          ],
+          "batting_order": [
+            "sdncv",
+            "adgms",
+            "fg",
+            "fgs",
+            "ga",
+            "d",
+            "g",
+            "asdga",
+            "dfgae",
+            "fgsdf",
+            "gh"
+          ],
+          "current_batting_state": {
+            "striker": "c664fb50",
+            "non_striker": "44028459",
+            "next_batsman_index": 11
+          },
+          "current_bowler": "b9bad430",
+          "extras": {
+            "wides": 0,
+            "no_balls": 0,
+            "byes": 0,
+            "leg_byes": 0
+          },
+          "fall_of_wickets": [
+            {
+              "wicket": 1,
+              "runs": 0,
+              "overs": 0.0,
+              "batsman": "sdncv"
+            },
+            {
+              "wicket": 2,
+              "runs": 0,
+              "overs": 0.1,
+              "batsman": "fg"
+            },
+            {
+              "wicket": 3,
+              "runs": 0,
+              "overs": 0.2,
+              "batsman": "fgs"
+            },
+            {
+              "wicket": 4,
+              "runs": 0,
+              "overs": 0.3,
+              "batsman": "ga"
+            },
+            {
+              "wicket": 5,
+              "runs": 0,
+              "overs": 0.4,
+              "batsman": "d"
+            },
+            {
+              "wicket": 6,
+              "runs": 0,
+              "overs": 0.5,
+              "batsman": "g"
+            },
+            {
+              "wicket": 7,
+              "runs": 0,
+              "overs": 1.0,
+              "batsman": "adgms"
+            },
+            {
+              "wicket": 8,
+              "runs": 0,
+              "overs": 1.1,
+              "batsman": "dfgae"
+            },
+            {
+              "wicket": 9,
+              "runs": 0,
+              "overs": 1.2,
+              "batsman": "fgsdf"
+            },
+            {
+              "wicket": 10,
+              "runs": 0,
+              "overs": 1.3,
+              "batsman": "gh"
+            }
+          ],
+          "is_completed": true,
+          "declared": false,
+          "is_super_over": false,
+          "max_wickets": 10,
+          "max_overs": null
+        },
+        {
+          "batting_team": "India",
+          "bowling_team": "pak",
+          "runs": 0,
+          "wickets": 10,
+          "overs": 1.4,
+          "balls": [
+            {
+              "over": 0,
+              "ball": 1,
+              "batsman": "ndfad",
+              "bowler": "ga",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 0,
+              "ball": 2,
+              "batsman": "a",
+              "bowler": "ga",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 0,
+              "ball": 3,
+              "batsman": "fsfgse",
+              "bowler": "ga",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 0,
+              "ball": 4,
+              "batsman": "fg",
+              "bowler": "ga",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 0,
+              "ball": 5,
+              "batsman": "sfgsfg",
+              "bowler": "ga",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 0,
+              "ball": 6,
+              "batsman": "s",
+              "bowler": "ga",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 1,
+              "ball": 1,
+              "batsman": "d",
+              "bowler": "ga",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 1,
+              "ball": 2,
+              "batsman": "sf",
+              "bowler": "ga",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 1,
+              "ball": 3,
+              "batsman": "g",
+              "bowler": "ga",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            },
+            {
+              "over": 1,
+              "ball": 4,
+              "batsman": "sd",
+              "bowler": "ga",
+              "runs": 0,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": true,
+              "dismissal": "Bowled",
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            }
+          ],
+          "batsmen": [
+            {
+              "id": "3b7e02f4",
+              "name": "ndfad",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "50a7c84d",
+              "name": "d",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "225a3e8b",
+              "name": "a",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "dfa4630c",
+              "name": "fsfgse",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "058ad163",
+              "name": "fg",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "76c6ccbb",
+              "name": "sfgsfg",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "fa890a7b",
+              "name": "s",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "f9752025",
+              "name": "fgg",
+              "runs": 0,
+              "balls": 0,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": false,
+              "dismissal": null,
+              "on_strike": false
+            },
+            {
+              "id": "03f9db1d",
+              "name": "sf",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "5d9f7f41",
+              "name": "g",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            },
+            {
+              "id": "58b4b413",
+              "name": "sd",
+              "runs": 0,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": true,
+              "dismissal": "Bowled",
+              "on_strike": true
+            }
+          ],
+          "bowlers": [
+            {
+              "id": "8b97c6cf",
+              "name": "ga",
+              "overs": 1.4,
+              "balls": 10,
+              "maidens": 0,
+              "runs": 0,
+              "wickets": 10
+            }
+          ],
+          "batting_order": [
+            "ndfad",
+            "d",
+            "a",
+            "fsfgse",
+            "fg",
+            "sfgsfg",
+            "s",
+            "fgg",
+            "sf",
+            "g",
+            "sd"
+          ],
+          "current_batting_state": {
+            "striker": "58b4b413",
+            "non_striker": "f9752025",
+            "next_batsman_index": 11
+          },
+          "current_bowler": "8b97c6cf",
+          "extras": {
+            "wides": 0,
+            "no_balls": 0,
+            "byes": 0,
+            "leg_byes": 0
+          },
+          "fall_of_wickets": [
+            {
+              "wicket": 1,
+              "runs": 0,
+              "overs": 0.0,
+              "batsman": "ndfad"
+            },
+            {
+              "wicket": 2,
+              "runs": 0,
+              "overs": 0.1,
+              "batsman": "a"
+            },
+            {
+              "wicket": 3,
+              "runs": 0,
+              "overs": 0.2,
+              "batsman": "fsfgse"
+            },
+            {
+              "wicket": 4,
+              "runs": 0,
+              "overs": 0.3,
+              "batsman": "fg"
+            },
+            {
+              "wicket": 5,
+              "runs": 0,
+              "overs": 0.4,
+              "batsman": "sfgsfg"
+            },
+            {
+              "wicket": 6,
+              "runs": 0,
+              "overs": 0.5,
+              "batsman": "s"
+            },
+            {
+              "wicket": 7,
+              "runs": 0,
+              "overs": 1.0,
+              "batsman": "d"
+            },
+            {
+              "wicket": 8,
+              "runs": 0,
+              "overs": 1.1,
+              "batsman": "sf"
+            },
+            {
+              "wicket": 9,
+              "runs": 0,
+              "overs": 1.2,
+              "batsman": "g"
+            },
+            {
+              "wicket": 10,
+              "runs": 0,
+              "overs": 1.3,
+              "batsman": "sd"
+            }
+          ],
+          "is_completed": true,
+          "declared": false,
+          "is_super_over": false,
+          "max_wickets": 10,
+          "max_overs": null
+        },
+        {
+          "batting_team": "India",
+          "bowling_team": "pak",
+          "runs": 2,
+          "wickets": 0,
+          "overs": 0.1,
+          "balls": [
+            {
+              "over": 0,
+              "ball": 1,
+              "batsman": "ndfad",
+              "bowler": "g",
+              "runs": 2,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": false,
+              "dismissal": null,
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            }
+          ],
+          "batsmen": [
+            {
+              "id": "958b37ea",
+              "name": "ndfad",
+              "runs": 2,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": false,
+              "dismissal": null,
+              "on_strike": true
+            },
+            {
+              "id": "04e50764",
+              "name": "d",
+              "runs": 0,
+              "balls": 0,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": false,
+              "dismissal": null,
+              "on_strike": false
+            }
+          ],
+          "bowlers": [
+            {
+              "id": "c7a60201",
+              "name": "g",
+              "overs": 0.0,
+              "balls": 1,
+              "maidens": 0,
+              "runs": 2,
+              "wickets": 0
+            }
+          ],
+          "batting_order": [
+            "ndfad",
+            "d"
+          ],
+          "current_batting_state": {
+            "striker": "958b37ea",
+            "non_striker": "04e50764",
+            "next_batsman_index": 2
+          },
+          "current_bowler": "c7a60201",
+          "extras": {
+            "wides": 0,
+            "no_balls": 0,
+            "byes": 0,
+            "leg_byes": 0
+          },
+          "fall_of_wickets": [],
+          "is_completed": true,
+          "declared": false,
+          "is_super_over": true,
+          "max_wickets": 2,
+          "max_overs": 1
+        },
+        {
+          "batting_team": "India",
+          "bowling_team": "pak",
+          "runs": 3,
+          "wickets": 0,
+          "overs": 0.1,
+          "balls": [
+            {
+              "over": 0,
+              "ball": 1,
+              "batsman": "ndfad",
+              "bowler": "d",
+              "runs": 3,
+              "extras": 0,
+              "extra_type": null,
+              "is_wicket": false,
+              "dismissal": null,
+              "is_boundary": false,
+              "is_six": false,
+              "non_striker_out": false
+            }
+          ],
+          "batsmen": [
+            {
+              "id": "cf479fd1",
+              "name": "ndfad",
+              "runs": 3,
+              "balls": 1,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": false,
+              "dismissal": null,
+              "on_strike": false
+            },
+            {
+              "id": "01fb6cfa",
+              "name": "d",
+              "runs": 0,
+              "balls": 0,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": false,
+              "dismissal": null,
+              "on_strike": true
+            }
+          ],
+          "bowlers": [
+            {
+              "id": "943bcffc",
+              "name": "d",
+              "overs": 0.0,
+              "balls": 1,
+              "maidens": 0,
+              "runs": 3,
+              "wickets": 0
+            }
+          ],
+          "batting_order": [
+            "ndfad",
+            "d"
+          ],
+          "current_batting_state": {
+            "striker": "01fb6cfa",
+            "non_striker": "cf479fd1",
+            "next_batsman_index": 2
+          },
+          "current_bowler": "943bcffc",
+          "extras": {
+            "wides": 0,
+            "no_balls": 0,
+            "byes": 0,
+            "leg_byes": 0
+          },
+          "fall_of_wickets": [],
+          "is_completed": true,
+          "declared": false,
+          "is_super_over": true,
+          "max_wickets": 2,
+          "max_overs": 1
+        },
+        {
+          "batting_team": "India",
+          "bowling_team": "pak",
+          "runs": 0,
+          "wickets": 0,
+          "overs": 0.0,
+          "balls": [],
+          "batsmen": [
+            {
+              "id": "4474ffa4",
+              "name": "ndfad",
+              "runs": 0,
+              "balls": 0,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": false,
+              "dismissal": null,
+              "on_strike": true
+            },
+            {
+              "id": "2f0cd784",
+              "name": "d",
+              "runs": 0,
+              "balls": 0,
+              "fours": 0,
+              "sixes": 0,
+              "is_out": false,
+              "dismissal": null,
+              "on_strike": false
+            }
+          ],
+          "bowlers": [],
+          "batting_order": [
+            "ndfad",
+            "d"
+          ],
+          "current_batting_state": {
+            "striker": "4474ffa4",
+            "non_striker": "2f0cd784",
+            "next_batsman_index": 2
+          },
+          "current_bowler": null,
+          "extras": {
+            "wides": 0,
+            "no_balls": 0,
+            "byes": 0,
+            "leg_byes": 0
+          },
+          "fall_of_wickets": [],
+          "is_completed": false,
+          "declared": false,
+          "is_super_over": true,
+          "max_wickets": 2,
+          "max_overs": 1
+        }
+      ],
+      "target": 1,
       "result": null,
       "rosters": {
         "India": [
-          "hi",
-          "bi",
-          "tat",
-          "hit",
-          "lnass",
-          "dhvand",
-          "dsbkad",
-          "bhsdsbc",
-          "basdkj",
-          "sjxhcbka",
-          "dccbkasd"
+          "ndfad",
+          "d",
+          "a",
+          "fsfgse",
+          "fg",
+          "sfgsfg",
+          "s",
+          "fgg",
+          "sf",
+          "g",
+          "sd"
         ],
-        "Pakistan": [
-          "iasgcd",
-          "dksbdfkajs",
-          "dndfjbads",
-          "ddfbsaddn",
-          "asbdabsld",
-          "ssuadsb'",
-          "'dmjbasddajb",
-          "dbucbas",
-          "cdb",
-          "dbdsi",
-          "DSBKAA"
+        "pak": [
+          "sdncv",
+          "adgms",
+          "fg",
+          "fgs",
+          "ga",
+          "d",
+          "g",
+          "asdga",
+          "dfgae",
+          "fgsdf",
+          "gh"
         ]
       },
       "batting_orders": {
         "India": [
-          "hi",
-          "bi",
-          "tat",
-          "hit",
-          "lnass",
-          "dhvand",
-          "dsbkad",
-          "bhsdsbc",
-          "basdkj",
-          "sjxhcbka",
-          "dccbkasd"
+          "ndfad",
+          "d",
+          "a",
+          "fsfgse",
+          "fg",
+          "sfgsfg",
+          "s",
+          "fgg",
+          "sf",
+          "g",
+          "sd"
         ],
-        "Pakistan": [
-          "iasgcd",
-          "dksbdfkajs",
-          "dndfjbads",
-          "ddfbsaddn",
-          "asbdabsld",
-          "ssuadsb'",
-          "'dmjbasddajb",
-          "dbucbas",
-          "cdb",
-          "dbdsi",
-          "DSBKAA"
+        "pak": [
+          "sdncv",
+          "adgms",
+          "fg",
+          "fgs",
+          "ga",
+          "d",
+          "g",
+          "asdga",
+          "dfgae",
+          "fgsdf",
+          "gh"
         ]
       },
-      "super_over": null,
-      "created_at": "2026-04-19T19:41:20.047248",
-      "last_updated": "2026-04-19T19:42:07.293882"
+      "super_over": {
+        "team_a_innings": 4,
+        "team_a": "India",
+        "team_b": "pak",
+        "team_a_score": 0,
+        "team_b_score": 0
+      },
+      "created_at": "2026-04-19T20:15:01.259536",
+      "last_updated": "2026-04-19T20:17:15.672096"
     }
   },
-  "last_updated": "2026-04-19T19:42:07.293882"
+  "last_updated": "2026-04-19T20:17:15.672096"
 }

@@ -308,17 +308,7 @@ class DataTable(tk.Frame):
 
 
 class BallTimeline(tk.Frame):
-    """Ball-by-ball timeline display with proper cricket notation
-    
-    Format:
-    - Normal: 0, 1, 2, 3, 4, 6
-    - Wicket: W
-    - Run Out: W(RO) or runs+W(RO) for run out with runs
-    - Wide: wd+1, wd+2, wd+4 (includes penalty)
-    - No Ball: nb+1, nb+2, nb+4 (includes penalty + runs)
-    - Bye: b1, b2
-    - Leg Bye: lb1, lb2
-    """
+    """Ball-by-ball timeline display"""
     
     def __init__(self, parent, **kwargs):
         super().__init__(parent, bg=COLORS['card_bg'], **kwargs)
@@ -341,15 +331,12 @@ class BallTimeline(tk.Frame):
         # Bind resize event to redraw
         self.canvas.bind('<Configure>', lambda e: self._redraw())
     
-    def add_ball(self, runs: int, is_wicket: bool = False, extra_type: Optional[str] = None, 
-                 extra_runs: int = 0, dismissal_type: Optional[str] = None):
+    def add_ball(self, runs: int, is_wicket: bool = False, extra_type: Optional[str] = None):
         """Add a ball to the timeline"""
         ball_data = {
             'runs': runs,
             'is_wicket': is_wicket,
-            'extra_type': extra_type,
-            'extra_runs': extra_runs,
-            'dismissal_type': dismissal_type
+            'extra_type': extra_type
         }
         self.balls.append(ball_data)
         self._redraw()
@@ -358,45 +345,6 @@ class BallTimeline(tk.Frame):
         """Clear the timeline"""
         self.balls = []
         self._redraw()
-    
-    def _get_ball_display(self, ball: Dict[str, Any]) -> tuple:
-        """Get display text and color for a ball
-        
-        Returns (text, color, is_wide_box)
-        """
-        runs = ball.get('runs', 0)
-        extra_runs = ball.get('extra_runs', 0)
-        extra_type = ball.get('extra_type')
-        is_wicket = ball.get('is_wicket', False)
-        dismissal_type = ball.get('dismissal_type', '')
-        
-        # Wicket cases
-        if is_wicket:
-            if dismissal_type and 'run out' in dismissal_type.lower():
-                if runs > 0:
-                    return (f"{runs}W", COLORS['wickets'], True)
-                else:
-                    return ("W(RO)", COLORS['wickets'], True)
-            else:
-                return ("W", COLORS['wickets'], False)
-        
-        # Extra cases
-        if extra_type == "WD":
-            total = 1 + extra_runs  # Wide penalty + additional runs
-            return (f"wd+{total}", COLORS['extras'], True)
-        elif extra_type == "NB":
-            total = 1 + runs + extra_runs  # NB penalty + batsman runs
-            return (f"nb+{total}", COLORS['extras'], True)
-        elif extra_type == "BYE":
-            return (f"b{extra_runs}", COLORS['extras'], False)
-        elif extra_type == "LB":
-            return (f"lb{extra_runs}", COLORS['extras'], False)
-        
-        # Normal runs
-        if runs in [4, 6]:
-            return (str(runs), COLORS['runs'], False)
-        else:
-            return (str(runs), COLORS['primary'], False)
     
     def _redraw(self):
         """Redraw the timeline"""
@@ -410,10 +358,10 @@ class BallTimeline(tk.Frame):
         x = 20
         y = canvas_height // 2
         radius = 18
-        ball_spacing = 10
+        ball_spacing = 12
         
-        # Only show last 18 balls (3 overs worth of legal deliveries approximately)
-        visible_balls = self.balls[-24:]  # Show more since wides/no-balls don't count
+        # Only show last 18 balls (3 overs)
+        visible_balls = self.balls[-18:]
         
         # Draw "No balls yet" if empty
         if not visible_balls:
@@ -426,62 +374,49 @@ class BallTimeline(tk.Frame):
             )
             return
         
-        legal_ball_count = 0
-        
         for i, ball in enumerate(visible_balls):
-            text, color, is_wide_box = self._get_ball_display(ball)
-            extra_type = ball.get('extra_type')
-            
-            # Determine box width based on text length
-            text_len = len(text)
-            if text_len <= 2:
-                box_width = radius * 2
+            # Determine color
+            if ball['is_wicket']:
+                color = COLORS['wickets']
+                text = 'W'
+            elif ball['extra_type']:
+                color = COLORS['extras']
+                text = ball['extra_type'][:2]
+            elif ball['runs'] in [4, 6]:
+                color = COLORS['runs']
+                text = str(ball['runs'])
             else:
-                box_width = radius * 2 + (text_len - 2) * 8
+                color = COLORS['primary']
+                text = str(ball['runs'])
             
-            # Draw rounded rectangle or circle
-            if is_wide_box or text_len > 2:
-                # Draw rounded rectangle for longer text
-                self.canvas.create_rectangle(
-                    x - box_width // 2, y - radius,
-                    x + box_width // 2, y + radius,
-                    fill=color,
-                    outline=COLORS['border'],
-                    width=1
-                )
-            else:
-                # Draw circle for short text
-                self.canvas.create_oval(
-                    x - radius, y - radius,
-                    x + radius, y + radius,
-                    fill=color,
-                    outline=COLORS['border'],
-                    width=1
-                )
+            # Draw circle with border for better visibility
+            self.canvas.create_oval(
+                x - radius, y - radius,
+                x + radius, y + radius,
+                fill=color,
+                outline=COLORS['border'],
+                width=1
+            )
             
             # Draw text
             self.canvas.create_text(
                 x, y,
                 text=text,
                 fill='white',
-                font=FONTS['small']
+                font=FONTS['button']
             )
             
-            x += max(box_width, radius * 2) + ball_spacing
+            x += radius * 2 + ball_spacing
             
-            # Count legal deliveries for over separators
-            if extra_type not in ["WD", "NB"]:
-                legal_ball_count += 1
-            
-            # Add over separator after every 6 legal deliveries
-            if legal_ball_count > 0 and legal_ball_count % 6 == 0 and i < len(visible_balls) - 1:
+            # Add over separator
+            if (i + 1) % 6 == 0 and i < len(visible_balls) - 1:
                 self.canvas.create_line(
                     x - 4, y - radius - 10,
                     x - 4, y + radius + 10,
                     fill=COLORS['border'],
                     width=2
                 )
-                x += 14
+                x += 18
 
 
 class LiveIndicator(tk.Frame):
