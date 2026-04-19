@@ -1,5 +1,5 @@
 """
-Match View - Core match scoring and viewing screen
+Match View - Core match scoring and viewing screen with proper layout and auto-managed batsmen
 """
 
 import tkinter as tk
@@ -158,7 +158,7 @@ class MatchView(tk.Frame):
         self._start_sync()
     
     def _create_ui(self):
-        """Create the match view UI"""
+        """Create the match view UI with improved layout"""
         # Header (fixed at top)
         header = tk.Frame(self, bg=COLORS['card_bg'], padx=PADDING, pady=PADDING)
         header.pack(fill='x')
@@ -195,20 +195,57 @@ class MatchView(tk.Frame):
         content = scroll_container.get_frame()
         content.configure(padx=PADDING, pady=PADDING)
         
-        # Top section: Score + Controls side by side
-        top_section = tk.Frame(content, bg=COLORS['background'])
-        top_section.pack(fill='x', pady=(0, SPACING))
+        # ===== SCOREBOARD (FULL WIDTH AT TOP) =====
+        scoreboard_frame = CardFrame(content, title="Scoreboard")
+        scoreboard_frame.pack(fill='x', pady=(0, SPACING))
         
-        # Left side - Scoreboard and Ball Timeline
-        left_panel = tk.Frame(top_section, bg=COLORS['background'])
-        left_panel.pack(side='left', fill='both', expand=True)
+        # Team info row
+        self.team_info_frame = tk.Frame(scoreboard_frame, bg=COLORS['card_bg'])
+        self.team_info_frame.pack(fill='x', pady=(0, SPACING // 2))
         
-        # Scoreboard
-        scoreboard_frame = CardFrame(left_panel, title="Scoreboard")
-        scoreboard_frame.pack(fill='x')
+        self.batting_team_label = tk.Label(
+            self.team_info_frame,
+            text="Batting: -",
+            font=FONTS['subheading'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['runs']
+        )
+        self.batting_team_label.pack(side='left')
         
+        self.bowling_team_label = tk.Label(
+            self.team_info_frame,
+            text="Bowling: -",
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_secondary']
+        )
+        self.bowling_team_label.pack(side='right')
+        
+        # Score display
         self.score_display = ScoreDisplay(scoreboard_frame)
         self.score_display.pack(pady=(SPACING // 2, SPACING))
+        
+        # Current batsmen display (CRITICAL - always show)
+        batsmen_frame = tk.Frame(scoreboard_frame, bg=COLORS['card_bg'])
+        batsmen_frame.pack(fill='x', pady=(0, SPACING // 2))
+        
+        self.striker_display = tk.Label(
+            batsmen_frame,
+            text="Striker: -",
+            font=FONTS['subheading'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_primary']
+        )
+        self.striker_display.pack(side='left')
+        
+        self.non_striker_display = tk.Label(
+            batsmen_frame,
+            text="Non-Striker: -",
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_secondary']
+        )
+        self.non_striker_display.pack(side='right')
         
         # Target info (for chasing)
         self.target_frame = tk.Frame(scoreboard_frame, bg=COLORS['card_bg'])
@@ -219,9 +256,22 @@ class MatchView(tk.Frame):
             text="",
             font=FONTS['subheading'],
             bg=COLORS['card_bg'],
-            fg=COLORS['text_secondary']
+            fg=COLORS['primary']
         )
         self.target_label.pack()
+        
+        # Extras breakdown
+        extras_info_frame = tk.Frame(scoreboard_frame, bg=COLORS['card_bg'])
+        extras_info_frame.pack(fill='x', pady=(SPACING // 4, SPACING // 2))
+        
+        self.extras_info_label = tk.Label(
+            extras_info_frame,
+            text="",
+            font=FONTS['small'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['extras']
+        )
+        self.extras_info_label.pack()
         
         # Insights
         insights_frame = tk.Frame(scoreboard_frame, bg=COLORS['card_bg'])
@@ -242,22 +292,18 @@ class MatchView(tk.Frame):
             label.pack()
             self.insight_labels[key] = label
         
-        # Ball timeline
-        timeline_frame = CardFrame(left_panel, title="Ball Timeline")
-        timeline_frame.pack(fill='x', pady=(SPACING + 4, 0))
+        # ===== BALL TIMELINE (FULL WIDTH, HORIZONTAL SCROLL) =====
+        timeline_frame = CardFrame(content, title="Ball Timeline")
+        timeline_frame.pack(fill='x', pady=(0, SPACING))
         
         self.ball_timeline = BallTimeline(timeline_frame)
         self.ball_timeline.pack(fill='x', pady=(SPACING // 4, SPACING // 4))
         
-        # Right side - Controls (admin only)
-        right_panel = tk.Frame(top_section, bg=COLORS['background'], width=480)
-        right_panel.pack(side='right', fill='y', padx=(SPACING + 4, 0))
-        right_panel.pack_propagate(False)
-        
+        # ===== MATCH CONTROLS (ADMIN ONLY, FULL WIDTH, NO SCROLL) =====
         if self.is_admin:
-            self._create_admin_controls(right_panel)
+            self._create_admin_controls(content)
         
-        # Middle section: Scorecard (Batting & Bowling tables)
+        # ===== SCORECARD (Batting & Bowling tables) - VERTICAL STACK =====
         scorecard_section = tk.Frame(content, bg=COLORS['background'])
         scorecard_section.pack(fill='x', pady=(SPACING, 0))
         
@@ -270,130 +316,61 @@ class MatchView(tk.Frame):
         )
         scorecard_label.pack(anchor='w', pady=(0, SPACING))
         
-        # Tables side by side
-        tables_frame = tk.Frame(scorecard_section, bg=COLORS['background'])
-        tables_frame.pack(fill='x')
-        
-        # Batting table
-        batting_container = tk.Frame(tables_frame, bg=COLORS['background'])
-        batting_container.pack(side='left', fill='both', expand=True, padx=(0, SPACING // 2))
-        
-        batting_frame = CardFrame(batting_container, title="Batting")
-        batting_frame.pack(fill='both', expand=True)
+        # Batting table (FULL WIDTH)
+        batting_frame = CardFrame(scorecard_section, title="Batting")
+        batting_frame.pack(fill='x', pady=(0, SPACING))
         
         self.batting_table = DataTable(
             batting_frame,
             columns=['Name', 'Runs', 'Balls', '4s', '6s', 'SR']
         )
-        self.batting_table.pack(fill='both', expand=True, pady=(0, SPACING // 2))
+        self.batting_table.pack(fill='x', pady=(0, SPACING // 2))
         
-        # Bowling table
-        bowling_container = tk.Frame(tables_frame, bg=COLORS['background'])
-        bowling_container.pack(side='right', fill='both', expand=True, padx=(SPACING // 2, 0))
-        
-        bowling_frame = CardFrame(bowling_container, title="Bowling")
-        bowling_frame.pack(fill='both', expand=True)
+        # Bowling table (FULL WIDTH)
+        bowling_frame = CardFrame(scorecard_section, title="Bowling")
+        bowling_frame.pack(fill='x', pady=(0, SPACING))
         
         self.bowling_table = DataTable(
             bowling_frame,
             columns=['Name', 'Overs', 'Runs', 'Wickets', 'Econ']
         )
-        self.bowling_table.pack(fill='both', expand=True, pady=(0, SPACING // 2))
+        self.bowling_table.pack(fill='x', pady=(0, SPACING // 2))
         
-        # Bottom section: Analysis charts (full width)
+        # ===== ANALYSIS CHARTS (FULL WIDTH) =====
         analysis_section = tk.Frame(content, bg=COLORS['background'])
         analysis_section.pack(fill='both', expand=True, pady=(SPACING + 8, 0))
         
         self._create_charts(analysis_section)
     
     def _create_admin_controls(self, parent):
-        """Create admin scoring controls"""
-        # Team Roster Management
-        roster_frame = CardFrame(parent, title="Team Roster")
-        roster_frame.pack(fill='x')
+        """Create admin scoring controls - FULL WIDTH, NO SCROLL"""
+        controls_card = CardFrame(parent, title="Match Controls")
+        controls_card.pack(fill='x', pady=(0, SPACING))
         
-        # Team selection and roster display
-        self.roster_team_var = tk.StringVar()
-        
-        team_select_frame = tk.Frame(roster_frame, bg=COLORS['card_bg'])
-        team_select_frame.pack(fill='x', pady=(0, SPACING))
-        
-        tk.Label(
-            team_select_frame,
-            text="Team:",
-            font=FONTS['body'],
-            bg=COLORS['card_bg'],
-            fg=COLORS['text_secondary']
-        ).pack(side='left')
-        
-        self.team_dropdown = ttk.Combobox(
-            team_select_frame,
-            textvariable=self.roster_team_var,
-            state='readonly',
-            width=20
-        )
-        self.team_dropdown.pack(side='left', padx=(SPACING // 2, 0))
-        self.team_dropdown.bind('<<ComboboxSelected>>', self._on_team_selected)
-        
-        # Roster list with scrollbar
-        roster_list_frame = tk.Frame(roster_frame, bg=COLORS['card_bg'])
-        roster_list_frame.pack(fill='x', pady=(0, SPACING))
-        
-        self.roster_listbox = tk.Listbox(
-            roster_list_frame,
-            height=5,
-            font=FONTS['body'],
-            bg=COLORS['background'],
-            fg=COLORS['text_primary'],
-            selectmode='single',
-            highlightthickness=1,
-            highlightbackground=COLORS['border']
-        )
-        roster_scrollbar = ttk.Scrollbar(roster_list_frame, orient='vertical', command=self.roster_listbox.yview)
-        self.roster_listbox.configure(yscrollcommand=roster_scrollbar.set)
-        self.roster_listbox.pack(side='left', fill='x', expand=True)
-        roster_scrollbar.pack(side='right', fill='y')
-        
-        # Add player to roster
-        add_roster_frame = tk.Frame(roster_frame, bg=COLORS['card_bg'])
-        add_roster_frame.pack(fill='x', pady=(0, SPACING // 2))
-        
-        self.new_player_entry = tk.Entry(
-            add_roster_frame,
-            font=FONTS['body'],
-            bg=COLORS['background'],
-            fg=COLORS['text_primary'],
-            insertbackground=COLORS['text_primary'],
-            highlightthickness=1,
-            highlightbackground=COLORS['border']
-        )
-        self.new_player_entry.pack(side='left', fill='x', expand=True, padx=(0, SPACING // 2))
-        self.new_player_entry.bind('<Return>', lambda e: self._add_to_roster())
-        
-        add_roster_btn = StyledButton(
-            add_roster_frame,
-            text="+ Add",
-            variant='primary',
-            command=self._add_to_roster
-        )
-        add_roster_btn.pack(side='right')
-        
-        # Scoring Controls
-        controls_frame = CardFrame(parent, title="Scoring Controls")
-        controls_frame.pack(fill='x', pady=(SPACING, 0))
+        controls_frame = tk.Frame(controls_card, bg=COLORS['card_bg'])
+        controls_frame.pack(fill='x')
         
         # Current players display
         players_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
-        players_frame.pack(fill='x', pady=(0, SPACING + 4))
+        players_frame.pack(fill='x', pady=(0, SPACING))
         
         self.striker_label = tk.Label(
             players_frame,
             text="Striker: -",
             font=FONTS['subheading'],
             bg=COLORS['card_bg'],
-            fg=COLORS['text_primary']
+            fg=COLORS['runs']
         )
-        self.striker_label.pack(anchor='w', pady=(0, 4))
+        self.striker_label.pack(side='left')
+        
+        self.non_striker_label = tk.Label(
+            players_frame,
+            text="Non-Striker: -",
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_secondary']
+        )
+        self.non_striker_label.pack(side='left', padx=(SPACING, 0))
         
         self.bowler_label = tk.Label(
             players_frame,
@@ -402,109 +379,158 @@ class MatchView(tk.Frame):
             bg=COLORS['card_bg'],
             fg=COLORS['text_secondary']
         )
-        self.bowler_label.pack(anchor='w')
+        self.bowler_label.pack(side='right')
         
-        # Add players buttons - now uses roster selection
-        add_players_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
-        add_players_frame.pack(fill='x', pady=(0, SPACING + 4))
-        
-        add_batsman_btn = StyledButton(
-            add_players_frame,
-            text="+ Batsman",
-            variant='secondary',
-            command=self._add_batsman
-        )
-        add_batsman_btn.pack(side='left')
+        # Bowler selection (required before scoring)
+        bowler_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        bowler_frame.pack(fill='x', pady=(0, SPACING))
         
         add_bowler_btn = StyledButton(
-            add_players_frame,
-            text="+ Bowler",
-            variant='secondary',
-            command=self._add_bowler
+            bowler_frame,
+            text="Select Bowler",
+            variant='primary',
+            command=self._select_bowler
         )
-        add_bowler_btn.pack(side='left', padx=(SPACING // 2, 0))
+        add_bowler_btn.pack(side='left')
         
-        # Run buttons
-        runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
-        runs_frame.pack(fill='x', pady=(0, SPACING + 4))
+        swap_strike_btn = StyledButton(
+            bowler_frame,
+            text="Swap Strike",
+            variant='secondary',
+            command=self._swap_strike
+        )
+        swap_strike_btn.pack(side='right')
         
+        # ===== RUNS SECTION =====
+        runs_label_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        runs_label_frame.pack(fill='x', pady=(0, 4))
         tk.Label(
-            runs_frame,
-            text="Runs:",
+            runs_label_frame,
+            text="Runs",
             font=FONTS['subheading'],
             bg=COLORS['card_bg'],
-            fg=COLORS['text_secondary']
-        ).pack(side='left', padx=(0, SPACING // 2))
+            fg=COLORS['text_primary']
+        ).pack(anchor='w')
         
-        runs_buttons_frame = tk.Frame(runs_frame, bg=COLORS['card_bg'])
-        runs_buttons_frame.pack(side='left', fill='x', expand=True)
+        runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        runs_frame.pack(fill='x', pady=(0, SPACING))
         
-        for i, runs in enumerate(RUN_OPTIONS):
+        for runs in RUN_OPTIONS:
             btn = StyledButton(
-                runs_buttons_frame,
+                runs_frame,
                 text=str(runs),
                 variant='success' if runs in [4, 6] else 'secondary',
                 command=lambda r=runs: self._record_runs(r),
-                width=4
-            )
-            btn.grid(row=0, column=i, padx=(0, 6), sticky='w')
-        
-        # Extras buttons
-        extras_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
-        extras_frame.pack(fill='x', pady=(0, SPACING + 4))
-        
-        tk.Label(
-            extras_frame,
-            text="Extras:",
-            font=FONTS['subheading'],
-            bg=COLORS['card_bg'],
-            fg=COLORS['text_secondary']
-        ).pack(side='left', padx=(0, SPACING // 2))
-        
-        extras_buttons_frame = tk.Frame(extras_frame, bg=COLORS['card_bg'])
-        extras_buttons_frame.pack(side='left', fill='x', expand=True)
-        
-        for i, extra in enumerate(EXTRA_OPTIONS):
-            btn = StyledButton(
-                extras_buttons_frame,
-                text=extra,
-                variant='warning',
-                command=lambda e=extra: self._record_extra(e),
                 width=5
             )
-            btn.grid(row=0, column=i, padx=(0, 6), sticky='w')
+            btn.pack(side='left', padx=(0, 6))
         
-        # Wicket button
+        # ===== EXTRAS SECTION =====
+        extras_label_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        extras_label_frame.pack(fill='x', pady=(0, 4))
+        tk.Label(
+            extras_label_frame,
+            text="Extras",
+            font=FONTS['subheading'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_primary']
+        ).pack(anchor='w')
+        
+        # Row 1: Basic extras
+        extras_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        extras_frame.pack(fill='x', pady=(0, SPACING // 2))
+        
+        extra_buttons = [
+            ("Wide", "WD"),
+            ("No Ball", "NB"),
+            ("Bye", "BYE"),
+            ("Leg Bye", "LB")
+        ]
+        for label, code in extra_buttons:
+            btn = StyledButton(
+                extras_frame,
+                text=label,
+                variant='warning',
+                command=lambda c=code: self._record_extra(c),
+                width=7
+            )
+            btn.pack(side='left', padx=(0, 6))
+        
+        # Row 2: Wide + Runs combinations
+        wide_runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        wide_runs_frame.pack(fill='x', pady=(0, SPACING // 2))
+        
+        wide_combos = [("Wide +1", "WD", 1), ("Wide +2", "WD", 2), ("Wide +4", "WD", 4)]
+        for label, extra_type, extra_runs in wide_combos:
+            btn = StyledButton(
+                wide_runs_frame,
+                text=label,
+                variant='warning',
+                command=lambda e=extra_type, r=extra_runs: self._record_extra_with_runs(e, r),
+                width=7
+            )
+            btn.pack(side='left', padx=(0, 6))
+        
+        # Row 3: No Ball + Runs combinations
+        nb_runs_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        nb_runs_frame.pack(fill='x', pady=(0, SPACING))
+        
+        nb_combos = [("NB +1", "NB", 1), ("NB +4", "NB", 4), ("NB +6", "NB", 6)]
+        for label, extra_type, extra_runs in nb_combos:
+            btn = StyledButton(
+                nb_runs_frame,
+                text=label,
+                variant='warning',
+                command=lambda e=extra_type, r=extra_runs: self._record_extra_with_runs(e, r),
+                width=6
+            )
+            btn.pack(side='left', padx=(0, 6))
+        
+        # ===== WICKET SECTION =====
+        wicket_label_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        wicket_label_frame.pack(fill='x', pady=(0, 4))
+        tk.Label(
+            wicket_label_frame,
+            text="Wicket",
+            font=FONTS['subheading'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_primary']
+        ).pack(anchor='w')
+        
         wicket_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
-        wicket_frame.pack(fill='x', pady=(0, SPACING + 4))
+        wicket_frame.pack(fill='x', pady=(0, SPACING // 2))
         
         wicket_btn = StyledButton(
             wicket_frame,
-            text="WICKET",
+            text="OUT!",
             variant='danger',
-            command=self._record_wicket
+            command=lambda: self._record_wicket_with_runs(0)
         )
-        wicket_btn.pack(fill='x', ipady=4)
+        wicket_btn.pack(side='left', padx=(0, 6))
         
-        # Action buttons
+        # Run out options
+        wicket_combos = [("Run Out +1", 1, False), ("Run Out +2", 2, False), ("Non-Striker Out", 0, True)]
+        for label, runs, ns_out in wicket_combos:
+            btn = StyledButton(
+                wicket_frame,
+                text=label,
+                variant='danger',
+                command=lambda r=runs, ns=ns_out: self._record_wicket_with_runs(r, ns),
+                width=11
+            )
+            btn.pack(side='left', padx=(0, 6))
+        
+        # ===== ACTION BUTTONS =====
         actions_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
         actions_frame.pack(fill='x', pady=(SPACING // 2, 0))
         
         undo_btn = StyledButton(
             actions_frame,
-            text="Undo",
+            text="Undo Last Ball",
             variant='secondary',
             command=self._undo_ball
         )
         undo_btn.pack(side='left')
-        
-        end_over_btn = StyledButton(
-            actions_frame,
-            text="End Over",
-            variant='secondary',
-            command=self._end_over
-        )
-        end_over_btn.pack(side='left', padx=(SPACING // 2, 0))
         
         self.declare_btn = StyledButton(
             actions_frame,
@@ -513,17 +539,35 @@ class MatchView(tk.Frame):
             command=self._declare_innings
         )
         self.declare_btn.pack(side='right')
+        
+        # Edit stats buttons
+        edit_actions_frame = tk.Frame(controls_frame, bg=COLORS['card_bg'])
+        edit_actions_frame.pack(fill='x', pady=(SPACING // 2, 0))
+        
+        edit_batsman_btn = StyledButton(
+            edit_actions_frame,
+            text="Edit Batsman",
+            variant='warning',
+            command=self._edit_batsman_stats
+        )
+        edit_batsman_btn.pack(side='left')
+        
+        edit_bowler_btn = StyledButton(
+            edit_actions_frame,
+            text="Edit Bowler",
+            variant='warning',
+            command=self._edit_bowler_stats
+        )
+        edit_bowler_btn.pack(side='left', padx=(SPACING // 2, 0))
     
     def _create_charts(self, parent):
-        """Create charts section - full width at bottom"""
+        """Create charts section"""
         charts_frame = CardFrame(parent, title="Match Analysis")
         charts_frame.pack(fill='both', expand=True)
         
-        # Create matplotlib figure - wider for full width display
         self.fig = Figure(figsize=(12, 5), dpi=90)
         self.fig.patch.set_facecolor(COLORS['card_bg'])
         
-        # Charts side by side (1 row, 2 columns)
         self.rr_ax = self.fig.add_subplot(121)
         self.rr_ax.set_title('Run Rate Progression', fontsize=13, pad=12, fontweight='bold')
         self.rr_ax.set_facecolor(COLORS['card_bg'])
@@ -532,7 +576,6 @@ class MatchView(tk.Frame):
         self.rpo_ax.set_title('Runs per Over', fontsize=13, pad=12, fontweight='bold')
         self.rpo_ax.set_facecolor(COLORS['card_bg'])
         
-        # Adjust layout for side-by-side
         self.fig.tight_layout(pad=3.0, w_pad=4.0)
         
         self.canvas = FigureCanvasTkAgg(self.fig, charts_frame)
@@ -557,15 +600,6 @@ class MatchView(tk.Frame):
         status = self.match.get('status', 'Upcoming')
         self.status_badge.set_status(status)
         
-        # Update team dropdown for roster management (admin only)
-        if self.is_admin and hasattr(self, 'team_dropdown'):
-            current_values = list(self.team_dropdown['values'])
-            if current_values != teams:
-                self.team_dropdown['values'] = teams
-                if not self.roster_team_var.get() and teams:
-                    self.roster_team_var.set(teams[0])
-                    self._on_team_selected()
-        
         # Get current innings
         innings_list = self.match.get('innings', [])
         current_idx = self.match.get('current_innings', 0)
@@ -573,6 +607,10 @@ class MatchView(tk.Frame):
         if not innings_list or current_idx >= len(innings_list):
             # No innings yet
             self.score_display.update_score(0, 0, 0.0, 0.0)
+            self.batting_team_label.configure(text="Batting: -")
+            self.bowling_team_label.configure(text="Bowling: -")
+            self.striker_display.configure(text="Striker: -")
+            self.non_striker_display.configure(text="Non-Striker: -")
             return
         
         innings = innings_list[current_idx]
@@ -586,6 +624,22 @@ class MatchView(tk.Frame):
         # Update score display
         self.score_display.update_score(runs, wickets, overs, run_rate)
         
+        # Update team indicators (CRITICAL)
+        batting_team = innings.get('batting_team', '-')
+        bowling_team = innings.get('bowling_team', '-')
+        self.batting_team_label.configure(text=f"Batting: {batting_team}")
+        self.bowling_team_label.configure(text=f"Bowling: {bowling_team}")
+        
+        # Update current batsmen display (CRITICAL)
+        striker = MatchEngine.get_current_batsman(innings, on_strike=True)
+        non_striker = MatchEngine.get_current_batsman(innings, on_strike=False)
+        
+        striker_text = f"Striker: {striker['name']} ({striker['runs']})" if striker else "Striker: -"
+        non_striker_text = f"Non-Striker: {non_striker['name']} ({non_striker['runs']})" if non_striker else "Non-Striker: -"
+        
+        self.striker_display.configure(text=striker_text)
+        self.non_striker_display.configure(text=non_striker_text)
+        
         # Update target info
         target = self.match.get('target')
         if target and current_idx > 0:
@@ -593,7 +647,7 @@ class MatchView(tk.Frame):
             self.target_label.configure(text=f"Target: {target} | Need: {runs_needed} runs")
             
             # Required run rate
-            total_overs = self.match.get('total_overs', 20)
+            total_overs = innings.get('max_overs') or self.match.get('total_overs', 20)
             remaining_overs = max(0, total_overs - overs)
             required_rr = calculate_required_run_rate(target, runs, remaining_overs)
             self.insight_labels['required_rr'].configure(text=f"Req RR: {required_rr:.2f}")
@@ -601,8 +655,22 @@ class MatchView(tk.Frame):
             self.target_label.configure(text="")
             self.insight_labels['required_rr'].configure(text="")
         
+        # Update extras breakdown
+        extras = innings.get('extras', {})
+        wides = extras.get('wides', 0)
+        no_balls = extras.get('no_balls', 0)
+        byes = extras.get('byes', 0)
+        leg_byes = extras.get('leg_byes', 0)
+        total_extras = wides + no_balls + byes + leg_byes
+        
+        if total_extras > 0:
+            extras_text = f"Extras: {total_extras} (Wd {wides}, NB {no_balls}, B {byes}, LB {leg_byes})"
+            self.extras_info_label.configure(text=extras_text)
+        else:
+            self.extras_info_label.configure(text="")
+        
         # Update insights
-        total_overs = self.match.get('total_overs')
+        total_overs = innings.get('max_overs') or self.match.get('total_overs')
         if total_overs:
             projected = calculate_projected_score(runs, overs, total_overs)
             remaining = calculate_remaining_balls(overs, total_overs)
@@ -624,6 +692,7 @@ class MatchView(tk.Frame):
         
         # Update batting table
         batsmen = innings.get('batsmen', [])
+        batting_state = innings.get('current_batting_state', {})
         batting_data = []
         for batsman in batsmen:
             balls = batsman.get('balls', 0)
@@ -631,8 +700,13 @@ class MatchView(tk.Frame):
             sr = (runs_b / balls * 100) if balls > 0 else 0.0
             
             name = batsman.get('name', 'Unknown')
-            if batsman['id'] in innings.get('current_batsmen', []):
-                name += " *" if batsman.get('on_strike') else ""
+            batsman_id = batsman.get('id')
+            
+            # Mark current batsmen
+            if batsman_id == batting_state.get('striker'):
+                name += " *"  # On strike
+            elif batsman_id == batting_state.get('non_striker'):
+                name += " (ns)"  # Non-striker
             elif batsman.get('is_out'):
                 name += " (out)"
             
@@ -669,14 +743,17 @@ class MatchView(tk.Frame):
         
         # Update admin controls
         if self.is_admin:
-            striker = MatchEngine.get_current_batsman(innings, on_strike=True)
             self.striker_label.configure(
                 text=f"Striker: {striker['name'] if striker else '-'}"
             )
             
+            self.non_striker_label.configure(
+                text=f"Non-Striker: {non_striker['name'] if non_striker else '-'}"
+            )
+            
             bowler = MatchEngine.get_current_bowler(innings)
             self.bowler_label.configure(
-                text=f"Bowler: {bowler['name'] if bowler else '-'}"
+                text=f"Bowler: {bowler['name'] if bowler else '- (SELECT BOWLER)'}"
             )
             
             # Show/hide declare button
@@ -692,14 +769,11 @@ class MatchView(tk.Frame):
         """Update the charts"""
         analysis = analyze_innings(innings.get('balls', []))
         
-        # Clear axes
         self.rr_ax.clear()
         self.rpo_ax.clear()
         
-        # Run rate progression
         rr_data = analysis.get('run_rate_progression', [])
         if rr_data:
-            # Use integer over numbers for x-axis (1, 2, 3, etc.)
             overs_x = list(range(1, len(rr_data) + 1))
             self.rr_ax.plot(overs_x, rr_data, color=COLORS['primary'], linewidth=2.5, marker='o', markersize=5)
             self.rr_ax.fill_between(overs_x, rr_data, alpha=0.2, color=COLORS['primary'])
@@ -707,17 +781,14 @@ class MatchView(tk.Frame):
             self.rr_ax.set_ylabel('Run Rate', fontsize=11, labelpad=8)
             self.rr_ax.tick_params(axis='both', labelsize=10, pad=4)
             self.rr_ax.grid(True, alpha=0.3, linestyle='--')
-            # Set x-axis to show only integers
             self.rr_ax.set_xticks(overs_x)
             self.rr_ax.set_xticklabels([str(o) for o in overs_x])
         
         self.rr_ax.set_title('Run Rate Progression', fontsize=13, pad=14, fontweight='bold')
         self.rr_ax.set_facecolor(COLORS['card_bg'])
         
-        # Runs per over
         rpo_data = analysis.get('runs_per_over', [])
         if rpo_data:
-            # Use integer over numbers for x-axis (1, 2, 3, etc.)
             overs_x = list(range(1, len(rpo_data) + 1))
             colors = [COLORS['runs'] if r >= 10 else COLORS['primary'] for r in rpo_data]
             self.rpo_ax.bar(overs_x, rpo_data, color=colors, edgecolor='none', width=0.7)
@@ -725,11 +796,9 @@ class MatchView(tk.Frame):
             self.rpo_ax.set_ylabel('Runs', fontsize=11, labelpad=8)
             self.rpo_ax.tick_params(axis='both', labelsize=10, pad=4)
             self.rpo_ax.grid(True, alpha=0.3, linestyle='--', axis='y')
-            # Set x-axis to show only integers
             self.rpo_ax.set_xticks(overs_x)
             self.rpo_ax.set_xticklabels([str(o) for o in overs_x])
             
-            # Mark wickets
             wickets = analysis.get('wickets_timeline', [])
             for w in wickets:
                 if w < len(overs_x):
@@ -741,66 +810,8 @@ class MatchView(tk.Frame):
         self.fig.tight_layout(pad=3.0, w_pad=4.0)
         self.canvas.draw()
     
-    def _on_team_selected(self, event=None):
-        """Handle team selection change"""
-        if not self.match:
-            return
-        
-        team_name = self.roster_team_var.get()
-        roster = self.match.get('rosters', {}).get(team_name, [])
-        
-        self.roster_listbox.delete(0, tk.END)
-        for player in roster:
-            self.roster_listbox.insert(tk.END, player)
-    
-    def _add_to_roster(self):
-        """Add a player to the selected team's roster"""
-        if not self.match:
-            return
-        
-        team_name = self.roster_team_var.get()
-        player_name = self.new_player_entry.get().strip()
-        
-        if not team_name:
-            messagebox.showwarning("Warning", "Please select a team first.")
-            return
-        
-        if not player_name:
-            return
-        
-        # Initialize rosters if not exists
-        if 'rosters' not in self.match:
-            self.match['rosters'] = {}
-        
-        if team_name not in self.match['rosters']:
-            self.match['rosters'][team_name] = []
-        
-        # Add player if not already in roster
-        if player_name not in self.match['rosters'][team_name]:
-            self.match['rosters'][team_name].append(player_name)
-            self.roster_listbox.insert(tk.END, player_name)
-            self.new_player_entry.delete(0, tk.END)
-            self._save_and_refresh()
-        else:
-            messagebox.showinfo("Info", f"{player_name} is already in the roster.")
-    
-    def _get_available_batsmen(self) -> List[str]:
-        """Get list of batsmen from roster who haven't batted yet"""
-        if not self.match:
-            return []
-        
-        innings = self.match['innings'][self.match['current_innings']]
-        batting_team = innings.get('batting_team', '')
-        roster = self.match.get('rosters', {}).get(batting_team, [])
-        
-        # Get names of batsmen who have already batted
-        batted = {b['name'] for b in innings.get('batsmen', [])}
-        
-        # Return available batsmen
-        return [p for p in roster if p not in batted]
-    
     def _get_available_bowlers(self) -> List[str]:
-        """Get list of bowlers from roster"""
+        """Get list of bowlers from bowling team roster"""
         if not self.match:
             return []
         
@@ -810,34 +821,8 @@ class MatchView(tk.Frame):
         
         return roster
     
-    def _add_batsman(self):
-        """Add a new batsman from roster or manually"""
-        if not self.match:
-            return
-        
-        innings = self.match['innings'][self.match['current_innings']]
-        available = self._get_available_batsmen()
-        
-        if available:
-            # Show dialog to select from roster
-            dialog = PlayerSelectDialog(
-                self,
-                title="Add Batsman",
-                players=available,
-                allow_custom=True
-            )
-            if dialog.result:
-                MatchEngine.add_batsman(innings, dialog.result)
-                self._save_and_refresh()
-        else:
-            # Fallback to manual entry
-            name = simpledialog.askstring("Add Batsman", "Enter batsman name:")
-            if name:
-                MatchEngine.add_batsman(innings, name.strip())
-                self._save_and_refresh()
-    
-    def _add_bowler(self):
-        """Add or select bowler from roster"""
+    def _select_bowler(self):
+        """Select bowler from bowling team roster"""
         if not self.match:
             return
         
@@ -845,7 +830,6 @@ class MatchView(tk.Frame):
         available = self._get_available_bowlers()
         
         if available:
-            # Show dialog to select from roster
             dialog = PlayerSelectDialog(
                 self,
                 title="Select Bowler",
@@ -856,7 +840,6 @@ class MatchView(tk.Frame):
                 MatchEngine.add_bowler(innings, dialog.result)
                 self._save_and_refresh()
         else:
-            # Fallback to manual entry
             name = simpledialog.askstring("Add Bowler", "Enter bowler name:")
             if name:
                 MatchEngine.add_bowler(innings, name.strip())
@@ -883,29 +866,45 @@ class MatchView(tk.Frame):
         if not self.match:
             return
         
-        # For wides and no balls, ask for additional runs
-        extra_runs = 0
-        if extra_type in ['WD', 'NB']:
-            result = simpledialog.askinteger(
-                "Additional Runs",
-                f"Additional runs with {extra_type}:",
-                initialvalue=0,
-                minvalue=0,
-                maxvalue=6
-            )
-            if result is not None:
-                extra_runs = result
-        
         innings = self.match['innings'][self.match['current_innings']]
-        striker = MatchEngine.get_current_batsman(innings, on_strike=True)
         bowler = MatchEngine.get_current_bowler(innings)
         
-        if not striker and extra_type not in ['WD', 'NB']:
-            messagebox.showwarning("Warning", "Please add batsmen first.")
+        if not bowler:
+            messagebox.showwarning("Warning", "Please select a bowler first.")
             return
         
+        extra_label = {
+            'WD': 'Wide',
+            'NB': 'No Ball',
+            'BYE': 'Bye',
+            'LB': 'Leg Bye'
+        }.get(extra_type, extra_type)
+        
+        result = simpledialog.askinteger(
+            f"{extra_label}",
+            f"Runs for {extra_label}:",
+            initialvalue=1,
+            minvalue=1,
+            maxvalue=6
+        )
+        if result is not None:
+            self.match = MatchEngine.record_ball(
+                self.match,
+                extra_type=extra_type,
+                extra_runs=result
+            )
+            self._save_and_refresh()
+    
+    def _record_extra_with_runs(self, extra_type: str, extra_runs: int):
+        """Record an extra with specified runs"""
+        if not self.match:
+            return
+        
+        innings = self.match['innings'][self.match['current_innings']]
+        bowler = MatchEngine.get_current_bowler(innings)
+        
         if not bowler:
-            messagebox.showwarning("Warning", "Please add a bowler first.")
+            messagebox.showwarning("Warning", "Please select a bowler first.")
             return
         
         self.match = MatchEngine.record_ball(
@@ -915,25 +914,28 @@ class MatchView(tk.Frame):
         )
         self._save_and_refresh()
     
-    def _record_wicket(self):
+    def _record_wicket_with_runs(self, runs: int, non_striker_out: bool = False):
         """Record a wicket"""
         if not self.match or not self._validate_players():
             return
         
         dismissal_types = ['Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit Wicket']
         
-        # Simple dialog for dismissal type
+        default_dismissal = 'Run Out' if runs > 0 or non_striker_out else 'Bowled'
+        
         dismissal = simpledialog.askstring(
             "Wicket",
             f"Dismissal type ({', '.join(dismissal_types)}):",
-            initialvalue="Bowled"
+            initialvalue=default_dismissal
         )
         
         if dismissal:
             self.match = MatchEngine.record_ball(
                 self.match,
+                runs=runs,
                 is_wicket=True,
-                dismissal_type=dismissal
+                dismissal_type=dismissal,
+                non_striker_out=non_striker_out
             )
             self._save_and_refresh()
     
@@ -946,12 +948,8 @@ class MatchView(tk.Frame):
             self.match = MatchEngine.undo_last_ball(self.match)
             self._save_and_refresh()
     
-    def _end_over(self):
-        """End the current over (for manual adjustment if needed)"""
-        messagebox.showinfo("Info", "Overs are automatically tracked. Use Undo if needed.")
-    
     def _declare_innings(self):
-        """Declare the innings (Test match only)"""
+        """Declare the innings"""
         if not self.match:
             return
         
@@ -963,25 +961,247 @@ class MatchView(tk.Frame):
             self.match = MatchEngine.declare_innings(self.match)
             self._save_and_refresh()
     
+    def _swap_strike(self):
+        """Swap strike between batsmen"""
+        if not self.match:
+            return
+        
+        innings = self.match['innings'][self.match['current_innings']]
+        batting_state = innings.get('current_batting_state', {})
+        
+        if not batting_state.get('striker') or not batting_state.get('non_striker'):
+            messagebox.showwarning("Warning", "Need 2 batsmen at the crease.")
+            return
+        
+        # Swap
+        striker_id = batting_state['striker']
+        non_striker_id = batting_state['non_striker']
+        
+        batting_state['striker'] = non_striker_id
+        batting_state['non_striker'] = striker_id
+        
+        # Update on_strike flags
+        for batsman in innings['batsmen']:
+            if batsman['id'] == non_striker_id:
+                batsman['on_strike'] = True
+            elif batsman['id'] == striker_id:
+                batsman['on_strike'] = False
+        
+        self._save_and_refresh()
+    
+    def _edit_batsman_stats(self):
+        """Edit a batsman's stats"""
+        if not self.match:
+            return
+        
+        innings = self.match['innings'][self.match['current_innings']]
+        batsmen = innings.get('batsmen', [])
+        
+        if not batsmen:
+            messagebox.showwarning("Warning", "No batsmen in current innings.")
+            return
+        
+        batsman_names = [f"{b['name']} ({b['runs']}/{b['balls']})" for b in batsmen]
+        dialog = PlayerSelectDialog(
+            self,
+            title="Select Batsman to Edit",
+            players=batsman_names,
+            allow_custom=False
+        )
+        
+        if dialog.result:
+            idx = batsman_names.index(dialog.result)
+            batsman = batsmen[idx]
+            self._show_batsman_edit_dialog(batsman)
+    
+    def _show_batsman_edit_dialog(self, batsman: Dict[str, Any]):
+        """Show dialog to edit batsman stats"""
+        dialog = tk.Toplevel(self)
+        dialog.title(f"Edit Stats: {batsman['name']}")
+        dialog.geometry("320x300")
+        dialog.configure(bg=COLORS['background'])
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        dialog.update_idletasks()
+        x = self.winfo_rootx() + (self.winfo_width() // 2) - 160
+        y = self.winfo_rooty() + (self.winfo_height() // 2) - 150
+        dialog.geometry(f"+{x}+{y}")
+        
+        form_frame = tk.Frame(dialog, bg=COLORS['background'])
+        form_frame.pack(fill='both', expand=True, padx=PADDING, pady=PADDING)
+        
+        # Runs
+        runs_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        runs_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(runs_frame, text="Runs:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        runs_var = tk.StringVar(value=str(batsman.get('runs', 0)))
+        tk.Entry(runs_frame, textvariable=runs_var, font=FONTS['body'], width=10).pack(side='left')
+        
+        # Balls
+        balls_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        balls_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(balls_frame, text="Balls:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        balls_var = tk.StringVar(value=str(batsman.get('balls', 0)))
+        tk.Entry(balls_frame, textvariable=balls_var, font=FONTS['body'], width=10).pack(side='left')
+        
+        # Fours
+        fours_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        fours_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(fours_frame, text="Fours:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        fours_var = tk.StringVar(value=str(batsman.get('fours', 0)))
+        tk.Entry(fours_frame, textvariable=fours_var, font=FONTS['body'], width=10).pack(side='left')
+        
+        # Sixes
+        sixes_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        sixes_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(sixes_frame, text="Sixes:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        sixes_var = tk.StringVar(value=str(batsman.get('sixes', 0)))
+        tk.Entry(sixes_frame, textvariable=sixes_var, font=FONTS['body'], width=10).pack(side='left')
+        
+        def save_changes():
+            try:
+                batsman['runs'] = int(runs_var.get())
+                batsman['balls'] = int(balls_var.get())
+                batsman['fours'] = int(fours_var.get())
+                batsman['sixes'] = int(sixes_var.get())
+                
+                innings = self.match['innings'][self.match['current_innings']]
+                total_runs = sum(b.get('runs', 0) for b in innings.get('batsmen', []))
+                extras = innings.get('extras', {})
+                total_extras = sum(extras.values())
+                innings['runs'] = total_runs + total_extras
+                
+                self._save_and_refresh()
+                dialog.destroy()
+            except ValueError:
+                messagebox.showerror("Error", "Please enter valid numbers.")
+        
+        btn_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        btn_frame.pack(fill='x', pady=(SPACING, 0))
+        
+        StyledButton(btn_frame, text="Cancel", variant='secondary', command=dialog.destroy).pack(side='left')
+        StyledButton(btn_frame, text="Save", variant='primary', command=save_changes).pack(side='right')
+        
+        dialog.wait_window()
+    
+    def _edit_bowler_stats(self):
+        """Edit a bowler's stats"""
+        if not self.match:
+            return
+        
+        innings = self.match['innings'][self.match['current_innings']]
+        bowlers = innings.get('bowlers', [])
+        
+        if not bowlers:
+            messagebox.showwarning("Warning", "No bowlers in current innings.")
+            return
+        
+        bowler_names = [f"{b['name']} ({b.get('overs', 0)}-{b.get('runs', 0)}-{b.get('wickets', 0)})" for b in bowlers]
+        dialog = PlayerSelectDialog(
+            self,
+            title="Select Bowler to Edit",
+            players=bowler_names,
+            allow_custom=False
+        )
+        
+        if dialog.result:
+            idx = bowler_names.index(dialog.result)
+            bowler = bowlers[idx]
+            self._show_bowler_edit_dialog(bowler)
+    
+    def _show_bowler_edit_dialog(self, bowler: Dict[str, Any]):
+        """Show dialog to edit bowler stats"""
+        dialog = tk.Toplevel(self)
+        dialog.title(f"Edit Stats: {bowler['name']}")
+        dialog.geometry("320x280")
+        dialog.configure(bg=COLORS['background'])
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        dialog.update_idletasks()
+        x = self.winfo_rootx() + (self.winfo_width() // 2) - 160
+        y = self.winfo_rooty() + (self.winfo_height() // 2) - 140
+        dialog.geometry(f"+{x}+{y}")
+        
+        form_frame = tk.Frame(dialog, bg=COLORS['background'])
+        form_frame.pack(fill='both', expand=True, padx=PADDING, pady=PADDING)
+        
+        # Overs
+        overs_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        overs_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(overs_frame, text="Overs:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        overs_var = tk.StringVar(value=str(bowler.get('overs', 0.0)))
+        tk.Entry(overs_frame, textvariable=overs_var, font=FONTS['body'], width=10).pack(side='left')
+        tk.Label(overs_frame, text="(e.g., 4.3)", font=FONTS['small'], bg=COLORS['background'], fg=COLORS['text_secondary']).pack(side='left', padx=(SPACING // 2, 0))
+        
+        # Runs
+        runs_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        runs_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(runs_frame, text="Runs:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        runs_var = tk.StringVar(value=str(bowler.get('runs', 0)))
+        tk.Entry(runs_frame, textvariable=runs_var, font=FONTS['body'], width=10).pack(side='left')
+        
+        # Wickets
+        wickets_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        wickets_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(wickets_frame, text="Wickets:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        wickets_var = tk.StringVar(value=str(bowler.get('wickets', 0)))
+        tk.Entry(wickets_frame, textvariable=wickets_var, font=FONTS['body'], width=10).pack(side='left')
+        
+        # Maidens
+        maidens_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        maidens_frame.pack(fill='x', pady=(0, SPACING // 2))
+        tk.Label(maidens_frame, text="Maidens:", font=FONTS['body'], bg=COLORS['background'], fg=COLORS['text_primary'], width=10, anchor='w').pack(side='left')
+        maidens_var = tk.StringVar(value=str(bowler.get('maidens', 0)))
+        tk.Entry(maidens_frame, textvariable=maidens_var, font=FONTS['body'], width=10).pack(side='left')
+        
+        def save_changes():
+            try:
+                bowler['overs'] = float(overs_var.get())
+                bowler['runs'] = int(runs_var.get())
+                bowler['wickets'] = int(wickets_var.get())
+                bowler['maidens'] = int(maidens_var.get())
+                
+                self._save_and_refresh()
+                dialog.destroy()
+            except ValueError:
+                messagebox.showerror("Error", "Please enter valid numbers.")
+        
+        btn_frame = tk.Frame(form_frame, bg=COLORS['background'])
+        btn_frame.pack(fill='x', pady=(SPACING, 0))
+        
+        StyledButton(btn_frame, text="Cancel", variant='secondary', command=dialog.destroy).pack(side='left')
+        StyledButton(btn_frame, text="Save", variant='primary', command=save_changes).pack(side='right')
+        
+        dialog.wait_window()
+    
     def _validate_players(self) -> bool:
         """Validate that required players are set"""
         if not self.match:
             return False
         
         innings = self.match['innings'][self.match['current_innings']]
+        batting_state = innings.get('current_batting_state', {})
+        
         striker = MatchEngine.get_current_batsman(innings, on_strike=True)
         bowler = MatchEngine.get_current_bowler(innings)
         
         if not striker:
-            messagebox.showwarning("Warning", "Please add batsmen first (need 2 at crease).")
+            messagebox.showwarning("Warning", "No striker at crease. Match may have ended.")
             return False
         
-        if len(innings.get('current_batsmen', [])) < 2:
-            messagebox.showwarning("Warning", "Need 2 batsmen at the crease.")
-            return False
+        if not batting_state.get('non_striker'):
+            # This could be fine if all out, but let's warn
+            max_wickets = innings.get('max_wickets', 10)
+            if innings.get('wickets', 0) >= max_wickets - 1:
+                pass  # Allow scoring with just striker (last wicket scenario)
+            else:
+                messagebox.showwarning("Warning", "No non-striker at crease.")
+                return False
         
         if not bowler:
-            messagebox.showwarning("Warning", "Please add a bowler first.")
+            messagebox.showwarning("Warning", "Please select a bowler first.")
             return False
         
         return True
@@ -1005,7 +1225,6 @@ class MatchView(tk.Frame):
         if self.data_manager.has_changed():
             self._load_match()
         
-        # Update live indicator
         if seconds_since == float('inf') or seconds_since > 60:
             self.live_indicator.set_warning("No data")
         elif seconds_since > 5:
@@ -1014,7 +1233,6 @@ class MatchView(tk.Frame):
             self.live_indicator.set_live(True, format_time_ago(last_updated))
             self.live_indicator.blink()
         
-        # Schedule next sync
         self.after(SYNC_INTERVAL, self._sync)
     
     def refresh(self):
