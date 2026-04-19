@@ -1,0 +1,81 @@
+{
+  "matches": {
+    "8d214b67": {
+      "match_id": "8d214b67",
+      "teams": [
+        "India",
+        "Pakistan"
+      ],
+      "format": "T20",
+      "total_overs": 20,
+      "total_innings": 2,
+      "toss_winner": null,
+      "toss_decision": null,
+      "status": "Upcoming",
+      "current_innings": 0,
+      "innings": [],
+      "target": null,
+      "result": null,
+      "rosters": {
+        "India": [
+          "hi",
+          "bi",
+          "tat",
+          "hit",
+          "lnass",
+          "dhvand",
+          "dsbkad",
+          "bhsdsbc",
+          "basdkj",
+          "sjxhcbka",
+          "dccbkasd"
+        ],
+        "Pakistan": [
+          "iasgcd",
+          "dksbdfkajs",
+          "dndfjbads",
+          "ddfbsaddn",
+          "asbdabsld",
+          "ssuadsb'",
+          "'dmjbasddajb",
+          "dbucbas",
+          "cdb",
+          "dbdsi",
+          "DSBKAA"
+        ]
+      },
+      "batting_orders": {
+        "India": [
+          "hi",
+          "bi",
+          "tat",
+          "hit",
+          "lnass",
+          "dhvand",
+          "dsbkad",
+          "bhsdsbc",
+          "basdkj",
+          "sjxhcbka",
+          "dccbkasd"
+        ],
+        "Pakistan": [
+          "iasgcd",
+          "dksbdfkajs",
+          "dndfjbads",
+          "ddfbsaddn",
+          "asbdabsld",
+          "ssuadsb'",
+          "'dmjbasddajb",
+          "dbucbas",
+          "cdb",
+          "dbdsi",
+          "DSBKAA"
+        ]
+      },
+      "super_over": null,
+      "created_at": "2026-04-19T19:41:20.047248",
+      "last_updated": "2026-04-19T19:42:07.293882"
+    }
+  },
+  "last_updated": "2026-04-19T19:42:07.293882"
+}
