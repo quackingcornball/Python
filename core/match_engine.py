@@ -70,11 +70,15 @@ class MatchEngine:
         
         return match
     
+    # Required players per team (strict cricket rule)
+    REQUIRED_PLAYERS = 11
+    
     @staticmethod
     def validate_match_can_start(match: Dict[str, Any]) -> Tuple[bool, str]:
         """
         Validate that match can be started.
         Returns (can_start, error_message)
+        STRICT: Each team MUST have exactly 11 players in roster and batting order.
         """
         teams = match.get("teams", [])
         rosters = match.get("rosters", {})
@@ -84,18 +88,31 @@ class MatchEngine:
             roster = rosters.get(team, [])
             batting_order = batting_orders.get(team, [])
             
-            # Check minimum roster size (2 players minimum)
-            if len(roster) < 2:
-                return False, f"{team} needs at least 2 players in roster"
+            # STRICT: Roster must have exactly 11 players
+            if len(roster) != MatchEngine.REQUIRED_PLAYERS:
+                return False, f"{team} must have exactly {MatchEngine.REQUIRED_PLAYERS} players (currently {len(roster)})"
             
-            # Check batting order is defined
-            if len(batting_order) < 2:
-                return False, f"{team} needs batting order defined (minimum 2 players)"
+            # STRICT: Batting order must have exactly 11 players
+            if len(batting_order) != MatchEngine.REQUIRED_PLAYERS:
+                return False, f"{team} batting order must have exactly {MatchEngine.REQUIRED_PLAYERS} players (currently {len(batting_order)})"
             
-            # Ensure batting order only contains roster players
+            # Check for duplicates in batting order
+            if len(batting_order) != len(set(batting_order)):
+                return False, f"{team} batting order has duplicate players"
+            
+            # Ensure batting order only contains roster players (no missing, no extras)
             for player in batting_order:
                 if player not in roster:
                     return False, f"Player '{player}' in {team}'s batting order is not in roster"
+            
+            # Ensure all roster players are in batting order
+            for player in roster:
+                if player not in batting_order:
+                    return False, f"Player '{player}' in {team}'s roster is not in batting order"
+        
+        # Check toss is set (will be handled by popup but verify anyway)
+        if not match.get("toss_winner") or not match.get("toss_decision"):
+            return False, "Toss winner and decision must be set before starting"
         
         return True, ""
     

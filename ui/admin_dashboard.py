@@ -188,68 +188,7 @@ class AdminDashboard(tk.Frame):
         )
         self.format_combo.pack(side='left')
         
-        # Toss winner
-        toss_frame = tk.Frame(form, bg=COLORS['card_bg'])
-        toss_frame.pack(fill='x', pady=(0, SPACING + 4))
-        
-        tk.Label(
-            toss_frame,
-            text="Toss Winner:",
-            font=FONTS['subheading'],
-            bg=COLORS['card_bg'],
-            fg=COLORS['text_primary'],
-            width=12,
-            anchor='w'
-        ).pack(side='left')
-        
-        self.toss_var = tk.StringVar()
-        self.toss_combo = ttk.Combobox(
-            toss_frame,
-            textvariable=self.toss_var,
-            state='readonly',
-            font=FONTS['body'],
-            width=26
-        )
-        self.toss_combo.pack(side='left')
-        
-        # Toss decision
-        decision_frame = tk.Frame(form, bg=COLORS['card_bg'])
-        decision_frame.pack(fill='x', pady=(0, SPACING + 4))
-        
-        tk.Label(
-            decision_frame,
-            text="Elected to:",
-            font=FONTS['subheading'],
-            bg=COLORS['card_bg'],
-            fg=COLORS['text_primary'],
-            width=12,
-            anchor='w'
-        ).pack(side='left')
-        
-        self.decision_var = tk.StringVar(value="bat")
-        tk.Radiobutton(
-            decision_frame,
-            text="Bat",
-            variable=self.decision_var,
-            value="bat",
-            font=FONTS['body'],
-            bg=COLORS['card_bg'],
-            activebackground=COLORS['card_bg']
-        ).pack(side='left', padx=(0, SPACING // 2))
-        
-        tk.Radiobutton(
-            decision_frame,
-            text="Bowl",
-            variable=self.decision_var,
-            value="bowl",
-            font=FONTS['body'],
-            bg=COLORS['card_bg'],
-            activebackground=COLORS['card_bg']
-        ).pack(side='left', padx=(SPACING // 2, 0))
-        
-        # Update toss options when teams change
-        self.team_a_var.trace_add('write', self._update_toss_options)
-        self.team_b_var.trace_add('write', self._update_toss_options)
+        # NOTE: Toss selection removed from form - now handled via popup when starting match
         
         # Action buttons
         btn_frame = tk.Frame(form, bg=COLORS['card_bg'])
@@ -440,15 +379,6 @@ class AdminDashboard(tk.Frame):
         )
         auto_order_btn.pack(side='right')
     
-    def _update_toss_options(self, *args):
-        """Update toss winner dropdown options"""
-        teams = []
-        if self.team_a_var.get():
-            teams.append(self.team_a_var.get())
-        if self.team_b_var.get():
-            teams.append(self.team_b_var.get())
-        self.toss_combo['values'] = teams
-    
     def _update_roster_titles(self):
         """Update roster panel titles with team names"""
         team_a_name = self.team_a_var.get() or "Team A"
@@ -540,8 +470,6 @@ class AdminDashboard(tk.Frame):
         self.team_a_var.set(teams[0] if len(teams) > 0 else '')
         self.team_b_var.set(teams[1] if len(teams) > 1 else '')
         self.format_var.set(match.get('format', 'T20'))
-        self.toss_var.set(match.get('toss_winner', ''))
-        self.decision_var.set(match.get('toss_decision', 'bat'))
         
         # Load rosters and batting orders
         self._load_rosters_and_orders(match)
@@ -553,8 +481,6 @@ class AdminDashboard(tk.Frame):
         self.team_a_var.set('')
         self.team_b_var.set('')
         self.format_var.set('T20')
-        self.toss_var.set('')
-        self.decision_var.set('bat')
         self.match_listbox.selection_clear(0, tk.END)
         self._update_button_states()
         
@@ -838,8 +764,6 @@ class AdminDashboard(tk.Frame):
         team_a = self.team_a_var.get().strip()
         team_b = self.team_b_var.get().strip()
         format_type = self.format_var.get()
-        toss_winner = self.toss_var.get()
-        toss_decision = self.decision_var.get()
         
         if not team_a or not team_b:
             messagebox.showwarning("Validation Error", "Please enter both team names.")
@@ -854,8 +778,7 @@ class AdminDashboard(tk.Frame):
                 match['format'] = format_type
                 match['total_overs'] = FORMATS[format_type]['overs']
                 match['total_innings'] = FORMATS[format_type]['innings']
-                match['toss_winner'] = toss_winner
-                match['toss_decision'] = toss_decision
+                # Note: toss_winner and toss_decision are set via popup when starting
                 
                 # Update roster and batting order keys if team names changed
                 if old_teams[0] != team_a and old_teams[0] in match.get('rosters', {}):
