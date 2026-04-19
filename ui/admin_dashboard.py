@@ -1,5 +1,5 @@
 """
-Admin Dashboard - Match creation and management
+Admin Dashboard - Match creation and management with batting order support
 """
 
 import tkinter as tk
@@ -102,11 +102,11 @@ class AdminDashboard(tk.Frame):
         # Create match form
         self._create_match_form(right_panel)
         
-        # Bottom section - Roster Management (only shown when a match is selected)
+        # Bottom section - Roster & Batting Order Management
         self.roster_section = tk.Frame(content, bg=COLORS['background'])
         self.roster_section.pack(fill='x', pady=(SPACING, 0))
         
-        self._create_roster_management(self.roster_section)
+        self._create_roster_and_batting_order_management(self.roster_section)
     
     def _create_match_form(self, parent):
         """Create the match creation/editing form"""
@@ -286,50 +286,85 @@ class AdminDashboard(tk.Frame):
         # Initially hide some buttons
         self._update_button_states()
     
-    def _create_roster_management(self, parent):
-        """Create the roster management section"""
-        roster_label = tk.Label(
+    def _create_roster_and_batting_order_management(self, parent):
+        """Create the roster and batting order management section"""
+        # Section title
+        section_label = tk.Label(
             parent,
-            text="Team Roster Management",
+            text="Team Roster & Batting Order Management",
             font=FONTS['heading'],
             bg=COLORS['background'],
             fg=COLORS['text_primary']
         )
-        roster_label.pack(anchor='w', pady=(0, SPACING))
+        section_label.pack(anchor='w', pady=(0, SPACING))
+        
+        # Info label
+        info_label = tk.Label(
+            parent,
+            text="Add players to roster, then set batting order. Match cannot start without batting order.",
+            font=FONTS['body'],
+            bg=COLORS['background'],
+            fg=COLORS['text_secondary']
+        )
+        info_label.pack(anchor='w', pady=(0, SPACING))
         
         # Container for both teams
         teams_container = tk.Frame(parent, bg=COLORS['background'])
         teams_container.pack(fill='x')
         
-        # Team A Roster
-        team_a_card = CardFrame(teams_container, title="Team A Roster")
-        team_a_card.pack(side='left', fill='both', expand=True, padx=(0, SPACING // 2))
+        # Team A Panel
+        team_a_panel = tk.Frame(teams_container, bg=COLORS['background'])
+        team_a_panel.pack(side='left', fill='both', expand=True, padx=(0, SPACING // 2))
         
-        self.team_a_roster_frame = tk.Frame(team_a_card, bg=COLORS['card_bg'])
-        self.team_a_roster_frame.pack(fill='both', expand=True)
+        self._create_team_roster_panel(team_a_panel, 'A')
         
-        # Team A roster list
-        self.team_a_listbox = tk.Listbox(
-            self.team_a_roster_frame,
+        # Team B Panel
+        team_b_panel = tk.Frame(teams_container, bg=COLORS['background'])
+        team_b_panel.pack(side='right', fill='both', expand=True, padx=(SPACING // 2, 0))
+        
+        self._create_team_roster_panel(team_b_panel, 'B')
+    
+    def _create_team_roster_panel(self, parent, team_id: str):
+        """Create roster and batting order panel for a team"""
+        # Roster Card
+        roster_card = CardFrame(parent, title=f"Team {team_id} Roster")
+        roster_card.pack(fill='x', pady=(0, SPACING // 2))
+        
+        if team_id == 'A':
+            self.team_a_roster_card = roster_card
+        else:
+            self.team_b_roster_card = roster_card
+        
+        roster_frame = tk.Frame(roster_card, bg=COLORS['card_bg'])
+        roster_frame.pack(fill='both', expand=True)
+        
+        # Roster list
+        roster_listbox = tk.Listbox(
+            roster_frame,
             font=FONTS['body'],
             bg=COLORS['background'],
             fg=COLORS['text_primary'],
             selectmode='single',
             highlightthickness=1,
             highlightbackground=COLORS['border'],
-            height=8
+            height=6
         )
-        team_a_scrollbar = ttk.Scrollbar(self.team_a_roster_frame, orient='vertical', command=self.team_a_listbox.yview)
-        self.team_a_listbox.configure(yscrollcommand=team_a_scrollbar.set)
-        self.team_a_listbox.pack(side='left', fill='both', expand=True)
-        team_a_scrollbar.pack(side='right', fill='y')
+        roster_scrollbar = ttk.Scrollbar(roster_frame, orient='vertical', command=roster_listbox.yview)
+        roster_listbox.configure(yscrollcommand=roster_scrollbar.set)
+        roster_listbox.pack(side='left', fill='both', expand=True)
+        roster_scrollbar.pack(side='right', fill='y')
         
-        # Team A buttons
-        team_a_btn_frame = tk.Frame(team_a_card, bg=COLORS['card_bg'])
-        team_a_btn_frame.pack(fill='x', pady=(SPACING // 2, 0))
+        if team_id == 'A':
+            self.team_a_listbox = roster_listbox
+        else:
+            self.team_b_listbox = roster_listbox
         
-        self.team_a_entry = tk.Entry(
-            team_a_btn_frame,
+        # Add player controls
+        add_frame = tk.Frame(roster_card, bg=COLORS['card_bg'])
+        add_frame.pack(fill='x', pady=(SPACING // 2, 0))
+        
+        player_entry = tk.Entry(
+            add_frame,
             font=FONTS['body'],
             bg=COLORS['background'],
             fg=COLORS['text_primary'],
@@ -337,95 +372,106 @@ class AdminDashboard(tk.Frame):
             highlightthickness=1,
             highlightbackground=COLORS['border']
         )
-        self.team_a_entry.pack(side='left', fill='x', expand=True, padx=(0, SPACING // 2), ipady=2)
-        self.team_a_entry.bind('<Return>', lambda e: self._add_player_to_roster('A'))
+        player_entry.pack(side='left', fill='x', expand=True, padx=(0, SPACING // 2), ipady=2)
+        player_entry.bind('<Return>', lambda e, t=team_id: self._add_player_to_roster(t))
         
-        add_a_btn = StyledButton(
-            team_a_btn_frame,
+        if team_id == 'A':
+            self.team_a_entry = player_entry
+        else:
+            self.team_b_entry = player_entry
+        
+        add_btn = StyledButton(
+            add_frame,
             text="Add",
             variant='primary',
-            command=lambda: self._add_player_to_roster('A')
+            command=lambda: self._add_player_to_roster(team_id)
         )
-        add_a_btn.pack(side='left', padx=(0, SPACING // 4))
+        add_btn.pack(side='left', padx=(0, SPACING // 4))
         
-        edit_a_btn = StyledButton(
-            team_a_btn_frame,
-            text="Edit",
-            variant='secondary',
-            command=lambda: self._edit_player_in_roster('A')
-        )
-        edit_a_btn.pack(side='left', padx=(0, SPACING // 4))
-        
-        remove_a_btn = StyledButton(
-            team_a_btn_frame,
+        remove_btn = StyledButton(
+            add_frame,
             text="Remove",
             variant='danger',
-            command=lambda: self._remove_player_from_roster('A')
+            command=lambda: self._remove_player_from_roster(team_id)
         )
-        remove_a_btn.pack(side='left')
+        remove_btn.pack(side='left')
         
-        # Team B Roster
-        team_b_card = CardFrame(teams_container, title="Team B Roster")
-        team_b_card.pack(side='right', fill='both', expand=True, padx=(SPACING // 2, 0))
+        # Batting Order Card
+        order_card = CardFrame(parent, title=f"Team {team_id} Batting Order")
+        order_card.pack(fill='x', pady=(SPACING // 2, 0))
         
-        self.team_b_roster_frame = tk.Frame(team_b_card, bg=COLORS['card_bg'])
-        self.team_b_roster_frame.pack(fill='both', expand=True)
+        if team_id == 'A':
+            self.team_a_order_card = order_card
+        else:
+            self.team_b_order_card = order_card
         
-        # Team B roster list
-        self.team_b_listbox = tk.Listbox(
-            self.team_b_roster_frame,
+        order_frame = tk.Frame(order_card, bg=COLORS['card_bg'])
+        order_frame.pack(fill='both', expand=True)
+        
+        # Batting order list
+        order_listbox = tk.Listbox(
+            order_frame,
             font=FONTS['body'],
             bg=COLORS['background'],
             fg=COLORS['text_primary'],
             selectmode='single',
             highlightthickness=1,
             highlightbackground=COLORS['border'],
-            height=8
+            height=6
         )
-        team_b_scrollbar = ttk.Scrollbar(self.team_b_roster_frame, orient='vertical', command=self.team_b_listbox.yview)
-        self.team_b_listbox.configure(yscrollcommand=team_b_scrollbar.set)
-        self.team_b_listbox.pack(side='left', fill='both', expand=True)
-        team_b_scrollbar.pack(side='right', fill='y')
+        order_scrollbar = ttk.Scrollbar(order_frame, orient='vertical', command=order_listbox.yview)
+        order_listbox.configure(yscrollcommand=order_scrollbar.set)
+        order_listbox.pack(side='left', fill='both', expand=True)
+        order_scrollbar.pack(side='right', fill='y')
         
-        # Team B buttons
-        team_b_btn_frame = tk.Frame(team_b_card, bg=COLORS['card_bg'])
-        team_b_btn_frame.pack(fill='x', pady=(SPACING // 2, 0))
+        if team_id == 'A':
+            self.team_a_order_listbox = order_listbox
+        else:
+            self.team_b_order_listbox = order_listbox
         
-        self.team_b_entry = tk.Entry(
-            team_b_btn_frame,
-            font=FONTS['body'],
-            bg=COLORS['background'],
-            fg=COLORS['text_primary'],
-            insertbackground=COLORS['text_primary'],
-            highlightthickness=1,
-            highlightbackground=COLORS['border']
-        )
-        self.team_b_entry.pack(side='left', fill='x', expand=True, padx=(0, SPACING // 2), ipady=2)
-        self.team_b_entry.bind('<Return>', lambda e: self._add_player_to_roster('B'))
+        # Batting order controls
+        order_btn_frame = tk.Frame(order_card, bg=COLORS['card_bg'])
+        order_btn_frame.pack(fill='x', pady=(SPACING // 2, 0))
         
-        add_b_btn = StyledButton(
-            team_b_btn_frame,
-            text="Add",
+        add_to_order_btn = StyledButton(
+            order_btn_frame,
+            text="Add Selected",
             variant='primary',
-            command=lambda: self._add_player_to_roster('B')
+            command=lambda: self._add_to_batting_order(team_id)
         )
-        add_b_btn.pack(side='left', padx=(0, SPACING // 4))
+        add_to_order_btn.pack(side='left', padx=(0, SPACING // 4))
         
-        edit_b_btn = StyledButton(
-            team_b_btn_frame,
-            text="Edit",
+        move_up_btn = StyledButton(
+            order_btn_frame,
+            text="Move Up",
             variant='secondary',
-            command=lambda: self._edit_player_in_roster('B')
+            command=lambda: self._move_in_batting_order(team_id, -1)
         )
-        edit_b_btn.pack(side='left', padx=(0, SPACING // 4))
+        move_up_btn.pack(side='left', padx=(0, SPACING // 4))
         
-        remove_b_btn = StyledButton(
-            team_b_btn_frame,
+        move_down_btn = StyledButton(
+            order_btn_frame,
+            text="Move Down",
+            variant='secondary',
+            command=lambda: self._move_in_batting_order(team_id, 1)
+        )
+        move_down_btn.pack(side='left', padx=(0, SPACING // 4))
+        
+        remove_from_order_btn = StyledButton(
+            order_btn_frame,
             text="Remove",
             variant='danger',
-            command=lambda: self._remove_player_from_roster('B')
+            command=lambda: self._remove_from_batting_order(team_id)
         )
-        remove_b_btn.pack(side='left')
+        remove_from_order_btn.pack(side='left')
+        
+        auto_order_btn = StyledButton(
+            order_btn_frame,
+            text="Auto (Roster Order)",
+            variant='warning',
+            command=lambda: self._auto_batting_order(team_id)
+        )
+        auto_order_btn.pack(side='right')
     
     def _update_toss_options(self, *args):
         """Update toss winner dropdown options"""
@@ -438,21 +484,17 @@ class AdminDashboard(tk.Frame):
     
     def _update_roster_titles(self):
         """Update roster panel titles with team names"""
-        # Find the CardFrame widgets and update their titles
         team_a_name = self.team_a_var.get() or "Team A"
         team_b_name = self.team_b_var.get() or "Team B"
         
-        # Update title labels in the roster section
-        for widget in self.roster_section.winfo_children():
-            if isinstance(widget, tk.Frame):
-                for child in widget.winfo_children():
-                    if isinstance(child, CardFrame):
-                        # Check the title and update
-                        title_text = child.title_label.cget('text')
-                        if 'Team A' in title_text or title_text == team_a_name + " Roster":
-                            child.title_label.configure(text=f"{team_a_name} Roster")
-                        elif 'Team B' in title_text or title_text == team_b_name + " Roster":
-                            child.title_label.configure(text=f"{team_b_name} Roster")
+        if hasattr(self, 'team_a_roster_card') and self.team_a_roster_card.title_label:
+            self.team_a_roster_card.title_label.configure(text=f"{team_a_name} Roster")
+        if hasattr(self, 'team_b_roster_card') and self.team_b_roster_card.title_label:
+            self.team_b_roster_card.title_label.configure(text=f"{team_b_name} Roster")
+        if hasattr(self, 'team_a_order_card') and self.team_a_order_card.title_label:
+            self.team_a_order_card.title_label.configure(text=f"{team_a_name} Batting Order")
+        if hasattr(self, 'team_b_order_card') and self.team_b_order_card.title_label:
+            self.team_b_order_card.title_label.configure(text=f"{team_b_name} Batting Order")
     
     def _update_button_states(self):
         """Update button visibility based on selected match"""
@@ -467,7 +509,7 @@ class AdminDashboard(tk.Frame):
                 )
                 self.delete_btn.configure(state='normal')
                 self.edit_live_btn.configure(
-                    state='normal' if status == 'Live' else 'disabled'
+                    state='normal' if status in ['Live', 'Super Over'] else 'disabled'
                 )
             else:
                 self._reset_form()
@@ -517,8 +559,9 @@ class AdminDashboard(tk.Frame):
         self.toss_var.set(match.get('toss_winner', ''))
         self.decision_var.set(match.get('toss_decision', 'bat'))
         
-        # Load rosters
-        self._load_rosters(match)
+        # Load rosters and batting orders
+        self._load_rosters_and_orders(match)
+        self._update_roster_titles()
     
     def _reset_form(self):
         """Reset the form to empty state"""
@@ -531,15 +574,18 @@ class AdminDashboard(tk.Frame):
         self.match_listbox.selection_clear(0, tk.END)
         self._update_button_states()
         
-        # Clear rosters
+        # Clear rosters and batting orders
         self.team_a_listbox.delete(0, tk.END)
         self.team_b_listbox.delete(0, tk.END)
+        self.team_a_order_listbox.delete(0, tk.END)
+        self.team_b_order_listbox.delete(0, tk.END)
         self._update_roster_titles()
     
-    def _load_rosters(self, match: Dict[str, Any]):
-        """Load rosters from match data into the listboxes"""
+    def _load_rosters_and_orders(self, match: Dict[str, Any]):
+        """Load rosters and batting orders from match data"""
         teams = match.get('teams', ['Team A', 'Team B'])
         rosters = match.get('rosters', {})
+        batting_orders = match.get('batting_orders', {})
         
         # Clear and load Team A roster
         self.team_a_listbox.delete(0, tk.END)
@@ -553,13 +599,22 @@ class AdminDashboard(tk.Frame):
         for player in team_b_roster:
             self.team_b_listbox.insert(tk.END, player)
         
-        # Update titles
-        self._update_roster_titles()
+        # Clear and load Team A batting order
+        self.team_a_order_listbox.delete(0, tk.END)
+        team_a_order = batting_orders.get(teams[0], []) if len(teams) > 0 else []
+        for i, player in enumerate(team_a_order):
+            self.team_a_order_listbox.insert(tk.END, f"{i+1}. {player}")
+        
+        # Clear and load Team B batting order
+        self.team_b_order_listbox.delete(0, tk.END)
+        team_b_order = batting_orders.get(teams[1], []) if len(teams) > 1 else []
+        for i, player in enumerate(team_b_order):
+            self.team_b_order_listbox.insert(tk.END, f"{i+1}. {player}")
     
     def _add_player_to_roster(self, team: str):
         """Add a player to the specified team's roster"""
         if not self.selected_match_id:
-            messagebox.showwarning("Warning", "Please select a match first.")
+            messagebox.showwarning("Warning", "Please select or create a match first.")
             return
         
         entry = self.team_a_entry if team == 'A' else self.team_b_entry
@@ -591,49 +646,6 @@ class AdminDashboard(tk.Frame):
         else:
             messagebox.showinfo("Info", f"{player_name} is already in the roster.")
     
-    def _edit_player_in_roster(self, team: str):
-        """Edit a player's name in the roster"""
-        if not self.selected_match_id:
-            messagebox.showwarning("Warning", "Please select a match first.")
-            return
-        
-        listbox = self.team_a_listbox if team == 'A' else self.team_b_listbox
-        selection = listbox.curselection()
-        
-        if not selection:
-            messagebox.showwarning("Warning", "Please select a player to edit.")
-            return
-        
-        idx = selection[0]
-        old_name = listbox.get(idx)
-        
-        new_name = simpledialog.askstring(
-            "Edit Player",
-            "Enter new name:",
-            initialvalue=old_name
-        )
-        
-        if new_name and new_name.strip() and new_name.strip() != old_name:
-            new_name = new_name.strip()
-            
-            match = self.data_manager.get_match(self.selected_match_id)
-            if not match:
-                return
-            
-            teams = match.get('teams', ['Team A', 'Team B'])
-            team_name = teams[0] if team == 'A' else teams[1]
-            
-            if 'rosters' in match and team_name in match['rosters']:
-                roster = match['rosters'][team_name]
-                if old_name in roster:
-                    roster_idx = roster.index(old_name)
-                    roster[roster_idx] = new_name
-                    
-                    listbox.delete(idx)
-                    listbox.insert(idx, new_name)
-                    
-                    self.data_manager.save_match(self.selected_match_id, match)
-    
     def _remove_player_from_roster(self, team: str):
         """Remove a player from the roster"""
         if not self.selected_match_id:
@@ -641,6 +653,7 @@ class AdminDashboard(tk.Frame):
             return
         
         listbox = self.team_a_listbox if team == 'A' else self.team_b_listbox
+        order_listbox = self.team_a_order_listbox if team == 'A' else self.team_b_order_listbox
         selection = listbox.curselection()
         
         if not selection:
@@ -662,7 +675,157 @@ class AdminDashboard(tk.Frame):
                 if player_name in match['rosters'][team_name]:
                     match['rosters'][team_name].remove(player_name)
                     listbox.delete(idx)
+                    
+                    # Also remove from batting order if present
+                    if 'batting_orders' in match and team_name in match['batting_orders']:
+                        if player_name in match['batting_orders'][team_name]:
+                            match['batting_orders'][team_name].remove(player_name)
+                            # Refresh batting order display
+                            order_listbox.delete(0, tk.END)
+                            for i, p in enumerate(match['batting_orders'][team_name]):
+                                order_listbox.insert(tk.END, f"{i+1}. {p}")
+                    
                     self.data_manager.save_match(self.selected_match_id, match)
+    
+    def _add_to_batting_order(self, team: str):
+        """Add selected roster player to batting order"""
+        if not self.selected_match_id:
+            messagebox.showwarning("Warning", "Please select a match first.")
+            return
+        
+        roster_listbox = self.team_a_listbox if team == 'A' else self.team_b_listbox
+        order_listbox = self.team_a_order_listbox if team == 'A' else self.team_b_order_listbox
+        
+        selection = roster_listbox.curselection()
+        if not selection:
+            messagebox.showwarning("Warning", "Please select a player from roster.")
+            return
+        
+        player_name = roster_listbox.get(selection[0])
+        
+        match = self.data_manager.get_match(self.selected_match_id)
+        if not match:
+            return
+        
+        teams = match.get('teams', ['Team A', 'Team B'])
+        team_name = teams[0] if team == 'A' else teams[1]
+        
+        # Initialize batting orders if not exists
+        if 'batting_orders' not in match:
+            match['batting_orders'] = {}
+        if team_name not in match['batting_orders']:
+            match['batting_orders'][team_name] = []
+        
+        # Add to batting order if not already in
+        if player_name not in match['batting_orders'][team_name]:
+            match['batting_orders'][team_name].append(player_name)
+            order_listbox.insert(tk.END, f"{order_listbox.size() + 1}. {player_name}")
+            self.data_manager.save_match(self.selected_match_id, match)
+        else:
+            messagebox.showinfo("Info", f"{player_name} is already in batting order.")
+    
+    def _remove_from_batting_order(self, team: str):
+        """Remove player from batting order"""
+        if not self.selected_match_id:
+            return
+        
+        order_listbox = self.team_a_order_listbox if team == 'A' else self.team_b_order_listbox
+        selection = order_listbox.curselection()
+        
+        if not selection:
+            messagebox.showwarning("Warning", "Please select a player to remove from batting order.")
+            return
+        
+        idx = selection[0]
+        
+        match = self.data_manager.get_match(self.selected_match_id)
+        if not match:
+            return
+        
+        teams = match.get('teams', ['Team A', 'Team B'])
+        team_name = teams[0] if team == 'A' else teams[1]
+        
+        if 'batting_orders' in match and team_name in match['batting_orders']:
+            if idx < len(match['batting_orders'][team_name]):
+                match['batting_orders'][team_name].pop(idx)
+                
+                # Refresh display
+                order_listbox.delete(0, tk.END)
+                for i, p in enumerate(match['batting_orders'][team_name]):
+                    order_listbox.insert(tk.END, f"{i+1}. {p}")
+                
+                self.data_manager.save_match(self.selected_match_id, match)
+    
+    def _move_in_batting_order(self, team: str, direction: int):
+        """Move player up or down in batting order"""
+        if not self.selected_match_id:
+            return
+        
+        order_listbox = self.team_a_order_listbox if team == 'A' else self.team_b_order_listbox
+        selection = order_listbox.curselection()
+        
+        if not selection:
+            return
+        
+        idx = selection[0]
+        new_idx = idx + direction
+        
+        match = self.data_manager.get_match(self.selected_match_id)
+        if not match:
+            return
+        
+        teams = match.get('teams', ['Team A', 'Team B'])
+        team_name = teams[0] if team == 'A' else teams[1]
+        
+        if 'batting_orders' in match and team_name in match['batting_orders']:
+            order = match['batting_orders'][team_name]
+            
+            if 0 <= new_idx < len(order):
+                # Swap positions
+                order[idx], order[new_idx] = order[new_idx], order[idx]
+                
+                # Refresh display
+                order_listbox.delete(0, tk.END)
+                for i, p in enumerate(order):
+                    order_listbox.insert(tk.END, f"{i+1}. {p}")
+                
+                # Keep selection on moved item
+                order_listbox.selection_set(new_idx)
+                
+                self.data_manager.save_match(self.selected_match_id, match)
+    
+    def _auto_batting_order(self, team: str):
+        """Auto-set batting order from roster order"""
+        if not self.selected_match_id:
+            messagebox.showwarning("Warning", "Please select a match first.")
+            return
+        
+        match = self.data_manager.get_match(self.selected_match_id)
+        if not match:
+            return
+        
+        teams = match.get('teams', ['Team A', 'Team B'])
+        team_name = teams[0] if team == 'A' else teams[1]
+        
+        roster = match.get('rosters', {}).get(team_name, [])
+        
+        if not roster:
+            messagebox.showwarning("Warning", "Please add players to roster first.")
+            return
+        
+        # Set batting order to roster order
+        if 'batting_orders' not in match:
+            match['batting_orders'] = {}
+        match['batting_orders'][team_name] = roster.copy()
+        
+        # Refresh display
+        order_listbox = self.team_a_order_listbox if team == 'A' else self.team_b_order_listbox
+        order_listbox.delete(0, tk.END)
+        for i, p in enumerate(roster):
+            order_listbox.insert(tk.END, f"{i+1}. {p}")
+        
+        self.data_manager.save_match(self.selected_match_id, match)
+        messagebox.showinfo("Success", f"Batting order set to roster order for {team_name}.")
     
     def _create_match(self):
         """Create or update a match"""
@@ -680,12 +843,23 @@ class AdminDashboard(tk.Frame):
             # Update existing match
             match = self.data_manager.get_match(self.selected_match_id)
             if match:
+                old_teams = match.get('teams', ['', ''])
                 match['teams'] = [team_a, team_b]
                 match['format'] = format_type
                 match['total_overs'] = FORMATS[format_type]['overs']
                 match['total_innings'] = FORMATS[format_type]['innings']
                 match['toss_winner'] = toss_winner
                 match['toss_decision'] = toss_decision
+                
+                # Update roster and batting order keys if team names changed
+                if old_teams[0] != team_a and old_teams[0] in match.get('rosters', {}):
+                    match['rosters'][team_a] = match['rosters'].pop(old_teams[0])
+                if old_teams[1] != team_b and old_teams[1] in match.get('rosters', {}):
+                    match['rosters'][team_b] = match['rosters'].pop(old_teams[1])
+                if old_teams[0] != team_a and old_teams[0] in match.get('batting_orders', {}):
+                    match['batting_orders'][team_a] = match['batting_orders'].pop(old_teams[0])
+                if old_teams[1] != team_b and old_teams[1] in match.get('batting_orders', {}):
+                    match['batting_orders'][team_b] = match['batting_orders'].pop(old_teams[1])
                 
                 self.data_manager.save_match(self.selected_match_id, match)
                 messagebox.showinfo("Success", "Match updated successfully!")
@@ -700,10 +874,12 @@ class AdminDashboard(tk.Frame):
             )
             
             self.data_manager.save_match(match['match_id'], match)
-            messagebox.showinfo("Success", f"Match created! ID: {match['match_id']}")
+            self.selected_match_id = match['match_id']
+            messagebox.showinfo("Success", f"Match created! ID: {match['match_id']}\n\nNow add players to rosters and set batting orders.")
         
         self._refresh_match_list()
-        self._reset_form()
+        self._update_roster_titles()
+        self._update_button_states()
     
     def _start_match(self):
         """Start the selected match"""
@@ -718,7 +894,18 @@ class AdminDashboard(tk.Frame):
             messagebox.showwarning("Error", "Only upcoming matches can be started.")
             return
         
-        match = MatchEngine.start_match(match)
+        # Validate match can start
+        can_start, error = MatchEngine.validate_match_can_start(match)
+        if not can_start:
+            messagebox.showerror("Cannot Start Match", error)
+            return
+        
+        # Start match
+        match, error = MatchEngine.start_match(match)
+        if error:
+            messagebox.showerror("Error", error)
+            return
+        
         self.data_manager.save_match(self.selected_match_id, match)
         
         messagebox.showinfo("Success", "Match started!")
