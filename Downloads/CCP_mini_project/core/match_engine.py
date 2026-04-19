@@ -386,6 +386,7 @@ class MatchEngine:
         if is_wicket:
             innings["wickets"] += 1
             bowler["wickets"] += 1
+            print(f"[v0] Wicket! Total wickets now: {innings['wickets']}")
             
             # Determine who is out
             if non_striker_out and non_striker:
@@ -405,6 +406,7 @@ class MatchEngine:
                 max_wickets = innings.get("max_wickets", 10)
                 if innings["wickets"] < max_wickets:
                     if not MatchEngine._bring_next_batsman(innings, replace_striker=False):
+                        print(f"[v0] No more batsmen available - innings complete (via wicket)")
                         innings["is_completed"] = True
             else:
                 # Striker is out
@@ -423,6 +425,7 @@ class MatchEngine:
                 max_wickets = innings.get("max_wickets", 10)
                 if innings["wickets"] < max_wickets:
                     if not MatchEngine._bring_next_batsman(innings, replace_striker=True):
+                        print(f"[v0] No more batsmen available - innings complete (via wicket)")
                         innings["is_completed"] = True
         
         # Update overs (only for legal deliveries)
@@ -471,29 +474,38 @@ class MatchEngine:
         max_wickets = innings.get("max_wickets", 10)
         max_overs = innings.get("max_overs") or total_overs
         
+        print(f"[v0] _check_innings_completion: current_innings={match['current_innings']}, total_innings={match.get('total_innings')}, wickets={innings['wickets']}, max_wickets={max_wickets}, overs={innings['overs']}, max_overs={max_overs}, is_completed={innings['is_completed']}")
+        
         # All out
         if innings["wickets"] >= max_wickets:
+            print(f"[v0] Innings complete: all out ({innings['wickets']} >= {max_wickets})")
             innings["is_completed"] = True
         
         # Overs completed (for limited overs)
         if max_overs and innings["overs"] >= max_overs:
+            print(f"[v0] Innings complete: overs done ({innings['overs']} >= {max_overs})")
             innings["is_completed"] = True
         
         # Target achieved (2nd innings or super over)
         if match["current_innings"] > 0 and match.get("target"):
             if innings["runs"] >= match["target"]:
+                print(f"[v0] Innings complete: target achieved ({innings['runs']} >= {match['target']})")
                 innings["is_completed"] = True
                 MatchEngine._complete_match(match)
                 return
         
         # Start next innings if needed
         if innings["is_completed"]:
+            print(f"[v0] Innings is_completed=True, checking what to do next...")
             if innings.get("is_super_over"):
+                print(f"[v0] Handling super over completion")
                 # Handle super over completion
                 MatchEngine._handle_super_over_completion(match)
             elif match["current_innings"] < match["total_innings"] - 1:
+                print(f"[v0] Starting next innings ({match['current_innings']} < {match['total_innings'] - 1})")
                 MatchEngine._start_next_innings(match)
             else:
+                print(f"[v0] Both innings complete, completing match")
                 # Both innings complete
                 MatchEngine._complete_match(match)
     
@@ -502,16 +514,22 @@ class MatchEngine:
         """Start the next innings"""
         current = match["innings"][match["current_innings"]]
         
+        print(f"[v0] _start_next_innings called: current_innings={match['current_innings']}")
+        
         # Set target for chasing team
         if match["current_innings"] == 0:
             match["target"] = current["runs"] + 1
+            print(f"[v0] Target set to {match['target']}")
         
         # Swap teams
         new_batting_team = current["bowling_team"]
         new_bowling_team = current["batting_team"]
         
+        print(f"[v0] New batting team: {new_batting_team}, New bowling team: {new_bowling_team}")
+        
         # Get batting order for new batting team
         batting_order = match.get("batting_orders", {}).get(new_batting_team, [])
+        print(f"[v0] Batting order for {new_batting_team}: {batting_order}")
         
         # Create new innings
         new_innings = MatchEngine.create_innings(
@@ -522,11 +540,14 @@ class MatchEngine:
         match["innings"].append(new_innings)
         match["current_innings"] += 1
         match["status"] = MatchEngine.STATUS_LIVE
+        print(f"[v0] Second innings started! current_innings={match['current_innings']}, status={match['status']}")
     
     @staticmethod
     def _complete_match(match: Dict[str, Any]) -> None:
         """Complete the match and determine result"""
+        print(f"[v0] _complete_match called: num_innings={len(match['innings'])}")
         if len(match["innings"]) < 2:
+            print(f"[v0] _complete_match returning early - only {len(match['innings'])} innings")
             return
         
         first_innings = match["innings"][0]
