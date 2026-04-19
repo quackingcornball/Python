@@ -303,7 +303,7 @@ class MatchView(tk.Frame):
         if self.is_admin:
             self._create_admin_controls(content)
         
-        # ===== SCORECARD (Batting & Bowling tables) =====
+        # ===== SCORECARD (Batting & Bowling tables) - VERTICAL STACK =====
         scorecard_section = tk.Frame(content, bg=COLORS['background'])
         scorecard_section.pack(fill='x', pady=(SPACING, 0))
         
@@ -316,35 +316,25 @@ class MatchView(tk.Frame):
         )
         scorecard_label.pack(anchor='w', pady=(0, SPACING))
         
-        # Tables side by side
-        tables_frame = tk.Frame(scorecard_section, bg=COLORS['background'])
-        tables_frame.pack(fill='x')
-        
-        # Batting table
-        batting_container = tk.Frame(tables_frame, bg=COLORS['background'])
-        batting_container.pack(side='left', fill='both', expand=True, padx=(0, SPACING // 2))
-        
-        batting_frame = CardFrame(batting_container, title="Batting")
-        batting_frame.pack(fill='both', expand=True)
+        # Batting table (FULL WIDTH)
+        batting_frame = CardFrame(scorecard_section, title="Batting")
+        batting_frame.pack(fill='x', pady=(0, SPACING))
         
         self.batting_table = DataTable(
             batting_frame,
             columns=['Name', 'Runs', 'Balls', '4s', '6s', 'SR']
         )
-        self.batting_table.pack(fill='both', expand=True, pady=(0, SPACING // 2))
+        self.batting_table.pack(fill='x', pady=(0, SPACING // 2))
         
-        # Bowling table
-        bowling_container = tk.Frame(tables_frame, bg=COLORS['background'])
-        bowling_container.pack(side='right', fill='both', expand=True, padx=(SPACING // 2, 0))
-        
-        bowling_frame = CardFrame(bowling_container, title="Bowling")
-        bowling_frame.pack(fill='both', expand=True)
+        # Bowling table (FULL WIDTH)
+        bowling_frame = CardFrame(scorecard_section, title="Bowling")
+        bowling_frame.pack(fill='x', pady=(0, SPACING))
         
         self.bowling_table = DataTable(
             bowling_frame,
             columns=['Name', 'Overs', 'Runs', 'Wickets', 'Econ']
         )
-        self.bowling_table.pack(fill='both', expand=True, pady=(0, SPACING // 2))
+        self.bowling_table.pack(fill='x', pady=(0, SPACING // 2))
         
         # ===== ANALYSIS CHARTS (FULL WIDTH) =====
         analysis_section = tk.Frame(content, bg=COLORS['background'])
