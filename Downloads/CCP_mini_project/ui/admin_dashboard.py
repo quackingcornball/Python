@@ -32,21 +32,25 @@ class TossDialog(tk.Toplevel):
         self.result = None  # Will be {"winner": team_name, "decision": "bat" or "bowl"}
         
         self.title("Toss")
-        self.geometry("420x350")
+        
+        # Larger window size to ensure all content is visible
+        window_width = 500
+        window_height = 480
+        
+        self.geometry(f"{window_width}x{window_height}")
+        self.minsize(window_width, window_height)  # Set minimum size
         self.configure(bg=COLORS['background'])
         self.transient(parent)
         self.grab_set()
-        self.resizable(False, False)
+        self.resizable(True, True)  # Allow resizing if needed
         
-        # Center the dialog
+        # Center the dialog on screen
         self.update_idletasks()
-        parent_x = parent.winfo_rootx()
-        parent_y = parent.winfo_rooty()
-        parent_w = parent.winfo_width()
-        parent_h = parent.winfo_height()
-        x = parent_x + (parent_w // 2) - 210
-        y = parent_y + (parent_h // 2) - 175
-        self.geometry(f"+{x}+{y}")
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = (screen_width // 2) - (window_width // 2)
+        y = (screen_height // 2) - (window_height // 2)
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
         
         # State variables
         self.toss_winner = tk.StringVar(value="")
@@ -61,7 +65,7 @@ class TossDialog(tk.Toplevel):
     
     def _create_ui(self):
         """Create the toss dialog UI with vertical layout"""
-        main_frame = tk.Frame(self, bg=COLORS['background'], padx=20, pady=20)
+        main_frame = tk.Frame(self, bg=COLORS['background'], padx=30, pady=30)
         main_frame.pack(fill='both', expand=True)
         
         # Title
@@ -72,55 +76,95 @@ class TossDialog(tk.Toplevel):
             bg=COLORS['background'],
             fg=COLORS['text_primary']
         )
-        title_label.pack(pady=(0, 15))
+        title_label.pack(pady=(0, 20))
         
         # Step 1: Select toss winner
-        winner_frame = CardFrame(main_frame, title="Step 1: Who won the toss?")
-        winner_frame.pack(fill='x', pady=(0, 15))
+        step1_label = tk.Label(
+            main_frame,
+            text="Step 1: Who won the toss?",
+            font=FONTS['subheading'],
+            bg=COLORS['background'],
+            fg=COLORS['text_primary']
+        )
+        step1_label.pack(anchor='w', pady=(0, 10))
         
-        winner_btn_frame = tk.Frame(winner_frame, bg=COLORS['card_bg'])
-        winner_btn_frame.pack(fill='x', pady=(5, 10))
+        winner_btn_frame = tk.Frame(main_frame, bg=COLORS['background'])
+        winner_btn_frame.pack(fill='x', pady=(0, 25))
         
-        self.team_a_btn = StyledButton(
+        self.team_a_btn = tk.Button(
             winner_btn_frame,
             text=self.team_a,
-            variant='secondary',
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_primary'],
+            relief='solid',
+            bd=1,
+            padx=20,
+            pady=12,
+            cursor='hand2',
             command=lambda: self._select_winner(self.team_a)
         )
-        self.team_a_btn.pack(side='left', expand=True, fill='x', padx=(0, 5), ipady=5)
+        self.team_a_btn.pack(side='left', expand=True, fill='x', padx=(0, 10))
         
-        self.team_b_btn = StyledButton(
+        self.team_b_btn = tk.Button(
             winner_btn_frame,
             text=self.team_b,
-            variant='secondary',
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_primary'],
+            relief='solid',
+            bd=1,
+            padx=20,
+            pady=12,
+            cursor='hand2',
             command=lambda: self._select_winner(self.team_b)
         )
-        self.team_b_btn.pack(side='left', expand=True, fill='x', padx=(5, 0), ipady=5)
+        self.team_b_btn.pack(side='left', expand=True, fill='x', padx=(10, 0))
         
         # Step 2: Select decision
-        decision_frame = CardFrame(main_frame, title="Step 2: Elected to...")
-        decision_frame.pack(fill='x', pady=(0, 15))
+        step2_label = tk.Label(
+            main_frame,
+            text="Step 2: Elected to...",
+            font=FONTS['subheading'],
+            bg=COLORS['background'],
+            fg=COLORS['text_primary']
+        )
+        step2_label.pack(anchor='w', pady=(0, 10))
         
-        decision_btn_frame = tk.Frame(decision_frame, bg=COLORS['card_bg'])
-        decision_btn_frame.pack(fill='x', pady=(5, 10))
+        decision_btn_frame = tk.Frame(main_frame, bg=COLORS['background'])
+        decision_btn_frame.pack(fill='x', pady=(0, 25))
         
-        self.bat_btn = StyledButton(
+        self.bat_btn = tk.Button(
             decision_btn_frame,
             text="Bat",
-            variant='secondary',
-            command=lambda: self._select_decision("bat"),
-            state='disabled'
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_secondary'],
+            relief='solid',
+            bd=1,
+            padx=20,
+            pady=12,
+            cursor='hand2',
+            state='disabled',
+            command=lambda: self._select_decision("bat")
         )
-        self.bat_btn.pack(side='left', expand=True, fill='x', padx=(0, 5), ipady=5)
+        self.bat_btn.pack(side='left', expand=True, fill='x', padx=(0, 10))
         
-        self.bowl_btn = StyledButton(
+        self.bowl_btn = tk.Button(
             decision_btn_frame,
             text="Bowl",
-            variant='secondary',
-            command=lambda: self._select_decision("bowl"),
-            state='disabled'
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_secondary'],
+            relief='solid',
+            bd=1,
+            padx=20,
+            pady=12,
+            cursor='hand2',
+            state='disabled',
+            command=lambda: self._select_decision("bowl")
         )
-        self.bowl_btn.pack(side='left', expand=True, fill='x', padx=(5, 0), ipady=5)
+        self.bowl_btn.pack(side='left', expand=True, fill='x', padx=(10, 0))
         
         # Status display
         self.status_label = tk.Label(
@@ -128,28 +172,43 @@ class TossDialog(tk.Toplevel):
             text="Please select the toss winner",
             font=FONTS['body'],
             bg=COLORS['background'],
-            fg=COLORS['text_secondary']
+            fg=COLORS['text_secondary'],
+            wraplength=400
         )
-        self.status_label.pack(pady=(5, 15))
+        self.status_label.pack(pady=(10, 25))
         
-        # Action buttons
+        # Action buttons at bottom
         btn_frame = tk.Frame(main_frame, bg=COLORS['background'])
-        btn_frame.pack(fill='x')
+        btn_frame.pack(fill='x', side='bottom')
         
-        cancel_btn = StyledButton(
+        cancel_btn = tk.Button(
             btn_frame,
             text="Cancel",
-            variant='secondary',
+            font=FONTS['body'],
+            bg=COLORS['card_bg'],
+            fg=COLORS['text_primary'],
+            relief='solid',
+            bd=1,
+            padx=25,
+            pady=10,
+            cursor='hand2',
             command=self._on_cancel
         )
         cancel_btn.pack(side='left')
         
-        self.start_btn = StyledButton(
+        self.start_btn = tk.Button(
             btn_frame,
             text="Start Match",
-            variant='success',
-            command=self._on_start,
-            state='disabled'
+            font=FONTS['body'],
+            bg=COLORS['success'],
+            fg='white',
+            relief='solid',
+            bd=1,
+            padx=25,
+            pady=10,
+            cursor='hand2',
+            state='disabled',
+            command=self._on_start
         )
         self.start_btn.pack(side='right')
     
@@ -157,51 +216,52 @@ class TossDialog(tk.Toplevel):
         """Handle toss winner selection"""
         self.toss_winner.set(team)
         
-        # Update button styles
+        # Update button styles - highlight selected team
         if team == self.team_a:
-            self.team_a_btn.configure(bg=COLORS['primary'], fg='white')
-            self.team_b_btn.configure(bg=COLORS['background'], fg=COLORS['text_primary'])
+            self.team_a_btn.configure(bg=COLORS['primary'], fg='white', state='normal')
+            self.team_b_btn.configure(bg=COLORS['card_bg'], fg=COLORS['text_primary'], state='normal')
         else:
-            self.team_b_btn.configure(bg=COLORS['primary'], fg='white')
-            self.team_a_btn.configure(bg=COLORS['background'], fg=COLORS['text_primary'])
+            self.team_b_btn.configure(bg=COLORS['primary'], fg='white', state='normal')
+            self.team_a_btn.configure(bg=COLORS['card_bg'], fg=COLORS['text_primary'], state='normal')
         
         # Enable decision buttons
-        self.bat_btn.configure(state='normal')
-        self.bowl_btn.configure(state='normal')
+        self.bat_btn.configure(state='normal', fg=COLORS['text_primary'])
+        self.bowl_btn.configure(state='normal', fg=COLORS['text_primary'])
+        
+        # Reset decision button styles if re-selecting winner
+        self.bat_btn.configure(bg=COLORS['card_bg'])
+        self.bowl_btn.configure(bg=COLORS['card_bg'])
+        self.toss_decision.set("")
         
         # Update status
-        self.status_label.configure(text=f"{team} won the toss. Select bat or bowl.")
+        self.status_label.configure(text=f"{team} won the toss. Now select Bat or Bowl.")
         
-        # Reset decision if already selected
-        if self.toss_decision.get():
-            self._update_decision_buttons()
+        # Disable start button until decision is made
+        self.start_btn.configure(state='disabled')
     
     def _select_decision(self, decision: str):
         """Handle toss decision selection"""
         self.toss_decision.set(decision)
-        self._update_decision_buttons()
         
         winner = self.toss_winner.get()
         other_team = self.team_b if winner == self.team_a else self.team_a
         
+        # Update button styles - highlight selected decision
         if decision == "bat":
-            self.status_label.configure(text=f"{winner} won toss, elected to BAT.\n{other_team} will bowl first.")
+            self.bat_btn.configure(bg=COLORS['success'], fg='white')
+            self.bowl_btn.configure(bg=COLORS['card_bg'], fg=COLORS['text_primary'])
+            self.status_label.configure(
+                text=f"{winner} won toss and elected to BAT.\n{other_team} will bowl first."
+            )
         else:
-            self.status_label.configure(text=f"{winner} won toss, elected to BOWL.\n{other_team} will bat first.")
+            self.bowl_btn.configure(bg=COLORS['success'], fg='white')
+            self.bat_btn.configure(bg=COLORS['card_bg'], fg=COLORS['text_primary'])
+            self.status_label.configure(
+                text=f"{winner} won toss and elected to BOWL.\n{other_team} will bat first."
+            )
         
         # Enable start button
-        self.start_btn.configure(state='normal')
-    
-    def _update_decision_buttons(self):
-        """Update decision button styles"""
-        decision = self.toss_decision.get()
-        
-        if decision == "bat":
-            self.bat_btn.configure(bg=COLORS['runs'], fg='white')
-            self.bowl_btn.configure(bg=COLORS['background'], fg=COLORS['text_primary'])
-        elif decision == "bowl":
-            self.bowl_btn.configure(bg=COLORS['runs'], fg='white')
-            self.bat_btn.configure(bg=COLORS['background'], fg=COLORS['text_primary'])
+        self.start_btn.configure(state='normal', bg=COLORS['success'])
     
     def _on_start(self):
         """Handle start match button"""
